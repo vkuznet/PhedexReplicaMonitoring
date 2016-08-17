@@ -27,12 +27,16 @@ elif [[  $1 =~ -?-yarn(-cluster)?$ ]]; then
     PYSPARK_PYTHON='/etc/spark/python' \
     spark-submit \
         --master yarn-client \
+        --driver-class-path '/usr/lib/hive/lib/*' \
+        --driver-java-options '-Dspark.executor.extraClassPath=/usr/lib/hive/lib/*' \
         --executor-memory 5g \
         --packages com.databricks:spark-csv_2.10:1.4.0 \
         $wroot/pbr.py ${1+"$@"}
 else
     PYSPARK_PYTHON='/afs/cern.ch/user/v/valya/public/python27'
     spark-submit \
+        --driver-class-path '/usr/lib/hive/lib/*' \
+        --driver-java-options '-Dspark.executor.extraClassPath=/usr/lib/hive/lib/*' \
         --executor-memory $((`nproc`/4))G \
         --master local[$((`nproc`/4))] \
         --packages com.databricks:spark-csv_2.10:1.4.0 \
