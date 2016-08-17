@@ -29,8 +29,10 @@ from datetime import datetime as dt
 from datetime import timedelta
 
 # additional data needed for joins
-GROUP_CSV_PATH = "../../data/phedex_groups.csv"														# user group names
-NODE_CSV_PATH = "../../data/phedex_node_kinds.csv"													# node kinds
+# user group names
+GROUP_CSV_PATH = os.path.join(os.environ.get('PBR_DATA', '/'), "phedex_groups.csv")
+# node kinds
+NODE_CSV_PATH = os.path.join(os.environ.get('PBR_DATA', '/'), "phedex_node_kinds.csv")
 
 DELTA = "delta"
 AGGREGATIONS = ["sum", "count", "min", "max", "first", "last", "mean", "delta"]						# supported aggregation functions
