@@ -74,6 +74,17 @@ Interval is used for delta operation. It defines between what periods delta will
 
 Filt is used for data filtering on one field from group keys. Filter is expected to be written in form - field:value. Field must match element from group keys list.
 
+### collect
+
+Collect is used for collecting data into one node and save as json in file system. fout parameter in this case should point to a place in local file system. Use this option with cautious because it collects data, so depending on aggregation memory in one node might not be enough.
+
+### logs
+
+Logs is used for specifying log level that spark produces during the execution. User must choose from pre-specified options otherwise he gets an error.
+```
+ALL, DEBUG, ERROR, FATAL, INFO, OFF, TRACE, WARN
+```
+
 ```
 bash pbr.sh --yarn \
 		--basedir hdfs:///project/awg/cms/phedex/block-replicas-snapshots/csv/ \
@@ -89,6 +100,8 @@ bash pbr.sh --yarn \
 		#--header
 		#--fout hdfs:///user/arepecka/ReplicaMonitoring
 		#--verbose 
+        #--collect
+        #--logs INFO
 		#--fname hdfs:///project/awg/cms/phedex/block-replicas-snapshots/csv/time=2016-07-09_03h07m28s 
 
 
