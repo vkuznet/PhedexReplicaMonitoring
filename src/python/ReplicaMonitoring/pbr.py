@@ -35,6 +35,7 @@ GROUP_CSV_PATH = os.path.join(os.environ.get('PBR_DATA', '/'), "phedex_groups.cs
 NODE_CSV_PATH = os.path.join(os.environ.get('PBR_DATA', '/'), "phedex_node_kinds.csv")
 
 DELTA = "delta"
+LOGLEVELS = ["ALL", "DEBUG", "ERROR", "FATAL", "INFO", "OFF", "TRACE", "WARN"]                      # supported spark log levels
 AGGREGATIONS = ["sum", "count", "min", "max", "first", "last", "mean", "delta"]						# supported aggregation functions
 GROUPKEYS = ["now", "dataset_name", "block_name", "node_name", "br_is_custiodial", "br_user_group",
             "data_tier", "acquisition_era", "node_kind", "now_sec"]									# supported group key values
@@ -77,6 +78,11 @@ class OptionParser():
             dest="interval", default="1", help="Interval for delta operation in days")
         self.parser.add_argument("--filt", action="store",
             dest="filt", default="", help="Filtering field:value")
+        self.parser.add_argument("--collect", action="store_true",
+            dest="collect", default=False, help="Collect before writing to file")
+        self.parser.add_argument("--logs", action="store",
+            dest="logs", default="INFO", help="Set log level to one of: " % LOGLEVELS)
+
 
 def schema():
     """
@@ -224,6 +230,16 @@ def validateDeltaParam(interval_str, results):
     if len(results) != 1:
         raise ValueError("Delta aggregation can have only 1 result field")
 
+def validateLogLevel(log_level):
+    """
+    Validates user specified spark log level
+
+    :param log_level: string of log level
+    :raises ValueError: if log level is not in LOGLEVELS list
+    """
+    if log_level not in LOGLEVELS:
+        raise ValueError("Specified log level = %s not available" % log_level)
+
 
 def defDates(fromdate, todate):
     """
@@ -321,16 +337,13 @@ def unionAll(dfs):
 
 def formFileHeader(fout):
     """
-    Forms output file header with date, time and execution number
+    Forms output file header with date, time
 
     :param fout: base dirctory of output files
     :returns: string representation of output file
     """
-    now_date = dt.strftime(dt.now(), "%Y-%m-%d")
-    file_list = os.popen("hadoop fs -ls %s" % fout).read().splitlines()
-    now_file_list = [file_path for file_path in file_list if now_date in file_path]
-    return  fout + "/" + dt.strftime(dt.now(), "%Y-%m-%d_%Hh%Mm%Ss") + "_execution_" + \
-            str(len(now_file_list)+1)
+
+    return  fout + "/" + dt.strftime(dt.now(), "%Y-%m-%d_%Hh%Mm%Ss")
 
 #########################################################################################################################################
 
@@ -341,10 +354,14 @@ def main():
 
     # setup spark/sql context to be used for communication with HDFS
     sc = SparkContext(appName="phedex_br")
-    if not opts.yarn:
-        sc.setLogLevel("ERROR")
-    sqlContext = HiveContext(sc)
 
+    # setting spark log level
+    logs = opts.logs.upper()
+    validateLogLevel(logs)
+    sc.setLogLevel(logs)
+
+    # setting up spark sql variables
+    sqlContext = HiveContext(sc)
     schema_def = schema()
 
     # read given file(s) into RDD
@@ -461,11 +478,19 @@ def main():
 
     # output results
     if opts.fout:
+        is_header = str(opts.header).lower()
         fout_header = formFileHeader(opts.fout)
-        if opts.header:
-            aggres.write.format('com.databricks.spark.csv').options(header = 'true').save(fout_header)
+
+        if opts.collect:
+            fout_header = fout_header + ".json"
+            aggres = aggres.toJSON().collect()
+            with open(fout_header, 'w+') as f:
+                f.write('[')
+                f.write(",".join(aggres))
+                f.write(']')
         else:
-            aggres.write.format('com.databricks.spark.csv').save(fout_header)
+            aggres.write.format('com.databricks.spark.csv').options(header = is_header).save(fout_header)
+
     else:
         aggres.show(50)
 
