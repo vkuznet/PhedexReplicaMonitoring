@@ -10,6 +10,17 @@ if [ "$#" -eq 0 ]; then
     exit 1
 fi
 
+# get required jars
+if [ ! -f $SPARK_CSV_ASSEMBLY_JAR ]; then
+   echo "Unable to find spark-csv-assembly jar in SPARK_CSV_ASSEMBLY_JAR environment"
+   exit 1
+fi
+if [ ! -f $ES_HADOOP_JAR ]; then
+   echo "Unable to find elasticsearch-hadoop jar in ES_HADOOP_JAR environment"
+   exit 1
+fi
+jars=$SPARK_CSV_ASSEMBLY_JAR,$ES_HADOOP_JAR
+
 # find our where package is installed on a system
 wroot=`python -c "import ReplicaMonitoring; print '/'.join(ReplicaMonitoring.__file__.split('/')[:-1])"`
 
@@ -30,7 +41,7 @@ elif [[  $1 =~ -?-yarn(-cluster)?$ ]]; then
         --driver-class-path '/usr/lib/hive/lib/*' \
         --driver-java-options '-Dspark.executor.extraClassPath=/usr/lib/hive/lib/*' \
         --executor-memory 5g \
-        --jars /afs/cern.ch/user/l/lmeniche/public/spark-csv-assembly-1.4.0.jar,/afs/cern.ch/user/a/arepecka/public/ReplicaMonitoring/production/PhedexReplicaMonitoring/data/elasticsearch-hadoop-2.3.2.jar \
+        --jars $jars \
         $wroot/pbr.py ${1+"$@"}
 #        --packages com.databricks:spark-csv_2.10:1.4.0 \
 #        $wroot/pbr.py ${1+"$@"}
@@ -39,7 +50,7 @@ else
     spark-submit \
         --driver-class-path '/usr/lib/hive/lib/*' \
         --driver-java-options '-Dspark.executor.extraClassPath=/usr/lib/hive/lib/*' \
-        --jars /afs/cern.ch/user/l/lmeniche/public/spark-csv-assembly-1.4.0.jar,/afs/cern.ch/user/a/arepecka/public/ReplicaMonitoring/production/PhedexReplicaMonitoring/data/elasticsearch-hadoop-2.3.2.jar \
+        --jars $jars \
         --executor-memory $((`nproc`/4))G \
         --master local[$((`nproc`/4))] \
         $wroot/pbr.py ${1+"$@"}
