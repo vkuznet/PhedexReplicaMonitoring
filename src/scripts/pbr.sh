@@ -30,7 +30,7 @@ elif [[  $1 =~ -?-yarn(-cluster)?$ ]]; then
         --driver-class-path '/usr/lib/hive/lib/*' \
         --driver-java-options '-Dspark.executor.extraClassPath=/usr/lib/hive/lib/*' \
         --executor-memory 5g \
-        --jars /afs/cern.ch/user/l/lmeniche/public/spark-csv-assembly-1.4.0.jar \
+        --jars /afs/cern.ch/user/l/lmeniche/public/spark-csv-assembly-1.4.0.jar,/afs/cern.ch/user/a/arepecka/public/ReplicaMonitoring/production/PhedexReplicaMonitoring/data/elasticsearch-hadoop-2.3.2.jar \
         $wroot/pbr.py ${1+"$@"}
 #        --packages com.databricks:spark-csv_2.10:1.4.0 \
 #        $wroot/pbr.py ${1+"$@"}
@@ -39,9 +39,9 @@ else
     spark-submit \
         --driver-class-path '/usr/lib/hive/lib/*' \
         --driver-java-options '-Dspark.executor.extraClassPath=/usr/lib/hive/lib/*' \
+        --jars /afs/cern.ch/user/l/lmeniche/public/spark-csv-assembly-1.4.0.jar,/afs/cern.ch/user/a/arepecka/public/ReplicaMonitoring/production/PhedexReplicaMonitoring/data/elasticsearch-hadoop-2.3.2.jar \
         --executor-memory $((`nproc`/4))G \
         --master local[$((`nproc`/4))] \
-        --jars /afs/cern.ch/user/l/lmeniche/public/spark-csv-assembly-1.4.0.jar \
         $wroot/pbr.py ${1+"$@"}
 #        --packages com.databricks:spark-csv_2.10:1.4.0 \
 #        $wroot/pbr.py ${1+"$@"}

@@ -14,6 +14,7 @@ Description:
 import os
 import sys
 import argparse
+import ConfigParser
 
 from pyspark import SparkContext
 from pyspark.sql import Row
@@ -33,6 +34,8 @@ from datetime import timedelta
 GROUP_CSV_PATH = os.path.join(os.environ.get('PBR_DATA', '/'), "phedex_groups.csv")
 # node kinds
 NODE_CSV_PATH = os.path.join(os.environ.get('PBR_DATA', '/'), "phedex_node_kinds.csv")
+# elasticsearch node
+CONFIG_PATH = os.path.join(os.environ.get('PBR_CONFIG', '/'), "pbr.cfg")
 
 DELTA = "delta"
 LOGLEVELS = ["ALL", "DEBUG", "ERROR", "FATAL", "INFO", "OFF", "TRACE", "WARN"]                      # supported spark log levels
@@ -82,6 +85,8 @@ class OptionParser():
             dest="collect", default=False, help="Collect before writing to file")
         self.parser.add_argument("--logs", action="store",
             dest="logs", default="INFO", help="Set log level to one of: " % LOGLEVELS)
+        self.parser.add_argument("--es", action="store_true",
+            dest="es", default=False, help="Writes result to elastic search")
 
 
 def schema():
@@ -241,6 +246,22 @@ def validateLogLevel(log_level):
         raise ValueError("Specified log level = %s not available" % log_level)
 
 
+def validateEsParams(node, port, resource):
+    """
+    Validates user specified Elasticsearch parameters
+
+    :param node: string representation of elasticsearch node
+    :param port: string representation of elasticearch port
+    :param resource string representation of elasticsearch index/type
+    :raises ValueError: if Elasticsearch node or port were not specified or index/type was not in correct form
+    """
+    if not node:
+        raise ValueError("Elasticsearch node was not specified")
+    if not port:
+        raise ValueError("Elasticsearch port was not specified")
+    if len(resource.split('/')) != 2:
+        raise ValueError("Elasticsearch index/type was not provided in the correct form")
+
 def defDates(fromdate, todate):
     """
     Check if dates are specified and returns default values
@@ -351,6 +372,12 @@ def main():
     "Main function"
     optmgr  = OptionParser()
     opts = optmgr.parser.parse_args()
+
+    config = ConfigParser.ConfigParser()
+    config.read(CONFIG_PATH)
+    esnode = config.get('ElasticSearch','node')
+    esport = config.get('ElasticSearch','port')
+    esresource = config.get('ElasticSearch','resource')
 
     # setup spark/sql context to be used for communication with HDFS
     sc = SparkContext(appName="phedex_br")
@@ -476,6 +503,8 @@ def main():
         else:
             aggres = ndf.groupBy(keys).agg(resAgg_dic)
 
+        aggres.cache()
+
     # output results
     if opts.fout:
         is_header = str(opts.header).lower()
@@ -490,7 +519,13 @@ def main():
                 f.write(']')
         else:
             aggres.write.format('com.databricks.spark.csv').options(header = is_header).save(fout_header)
-
+        
+        if opts.es:
+            validateEsParams(esnode, esport, esresource)
+            aggres.repartition(1).write.format("org.elasticsearch.spark.sql").option("es.nodes", esnode)\
+                                                                                 .option("es.port", esport)\
+                                                                                 .option("es.resource", esresource)\
+                                                                                 .save(mode="append")
     else:
         aggres.show(50)
 
