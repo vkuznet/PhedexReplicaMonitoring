@@ -43,8 +43,9 @@ block_files, block_bytes, br_src_files, br_src_bytes, br_dest_files, br_dest_byt
 Aggregations are used for specifying aggregation functions for group operation. If the same aggregation function should be used fo all results columns then it is enough to specify one aggregation function. If user wants to specify different aggregation functions for different columns then aggregations is expected to be written in csv manner and in the exact order as results were specified. If parameter is not set - default value is set (sum) for all results elements. Possible values for aggregations:
 
 ```
-sum, count, min, max, first, last, mean
+sum, count, min, max, first, last, mean, avg-day
 ```
+* Aggregation avg-day simply sums all result data and divides it by distinct days count
 
 ### order
 
@@ -72,7 +73,7 @@ Interval is used for delta operation. It defines between what periods delta will
 
 ### filt
 
-Filt is used for data filtering on one field from group keys. Filter is expected to be written in form - field:value. Field must match element from group keys list.
+Filt is used for data filtering on one field from group keys. Filter is expected to be written in form - field:regex. Field must match element from group keys list. More than one filtering pairs must be seperated by comma (csv manner). Note that filtering accepts not a simple value but regular expression
 
 ### collect
 
@@ -85,36 +86,49 @@ Logs is used for specifying log level that spark produces during the execution. 
 ALL, DEBUG, ERROR, FATAL, INFO, OFF, TRACE, WARN
 ```
 
+### es
+
+Es is used for exporting aggregated data to elasticsearch. PBR_CONFIG environment variable must be specified to point out to confiugration file pbr.cfg. File should contain section [Elasticsearch] and elements: node, port, resource (index/type). Example of this file can be found at ~/etc/pbr.cfg. Also note that port 9200 should be open for incoming connections in machine that runs elasticsearch.
+
+### esorigin
+
+Esorigin is used for specifying the origin of data. It basically adds new column and fill with data specified in this parameter (it is done only for data that goes to elasticsearch, hdfs data remains untouched) .When using as a cronjob it should have value of "cronjob". Running script manually user should specify origin by himself (or leave empty - origin "custom"). This field should be later used for making searches in kibana (to select proper data, ex.: origin : cronjob).
+
 ```
 bash pbr.sh --yarn \
 		--basedir hdfs:///project/awg/cms/phedex/block-replicas-snapshots/csv/ \
 		--fromdate 2015-08-04 \
 		--todate 2015-08-09 \
-		--keys data_tier,acquisition_era \
+		--keys now,br_user_group,data_tier,acquisition_era,node_kind \
 		--results br_node_files,br_dest_files \
-		--aggregations min,sum \
-		--order data_tier,br_dest_files \
-		--asc 0,1
+		--aggregations sum \
+		--order br_node_bytes \
+		--asc 0
+		--fout hdfs:///user/arepecka/ReplicaMonitoring
+		--es
+		--esorigin cronjob
 		#--interval 1 
-        #--filt node_name:T2_US_Florida
+        	#--filt acquisition_era:Run2012.*,data_tier:^RAW$
 		#--header
 		#--fout hdfs:///user/arepecka/ReplicaMonitoring
 		#--verbose 
-        #--collect
-        #--logs INFO
+        	#--collect
+		#--logs INFO
 		#--fname hdfs:///project/awg/cms/phedex/block-replicas-snapshots/csv/time=2016-07-09_03h07m28s 
 
 
 # An example result of such a query could be as follows:
 
 # Between dates 2016-08-04 and 2016-08-09 found 7 files
-#--------------------------------------------------------------------------
-#-- data_tier - acquisition_era - min(br_node_files) - sum(br_dest_files)--
-#--------------------------------------------------------------------------
-#-- RECO      - patTest         - 0                  - 6
-#-- RECO      - CMSSW_1_8_4     - 0                  - 84
-#-- RAW       - CMSSW_1_6_7     - 0                  - 12
-#-- RAW       - null            - 0                  - 48
-#--------------------------------------------------------------------------
+#+--------------------+----------------+--------------------+---------+------------------+-------------------+
+#|       br_user_group|       data_tier|     acquisition_era|node_kind|sum(br_dest_bytes)| sum(br_node_bytes)|
+#+--------------------+----------------+--------------------+---------+------------------+-------------------+
+#|             DataOps|          AODSIM|  RunIIWinter15wmLHE|     Disk|   1.6496147942E10|    1.6496147942E10|
+#|              RelVal|            RECO|    CMSSW_8_1_0_pre6|      MSS|1.6625046551087E13| 1.6625046551087E13|
+#|                null|    GEN-SIM-RECO|    CMSSW_8_1_0_pre7|   Buffer|               0.0|  3.733706112458E12|
+#|                null|        ALCARECO|            CRUZET09|   Buffer|               0.0|    3.2492627474E10|
+#|                null|             AOD|            Run2012A|     Disk|               0.0|  4.738498939815E12|
+#|                null|             RAW|            Run2015C|   Buffer|               0.0|5.04699365840691E14|
+#+--------------------+----------------+--------------------+---------+------------------+-------------------+
 ```
 
