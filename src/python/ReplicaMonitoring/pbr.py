@@ -22,7 +22,7 @@ from pyspark.sql import SQLContext
 from pyspark.sql import HiveContext
 from pyspark.sql import DataFrame
 from pyspark.sql.window import Window
-from pyspark.sql.types import DoubleType, IntegerType, StructType, StructField, StringType
+from pyspark.sql.types import DoubleType, IntegerType, StructType, StructField, StringType, BooleanType
 from pyspark.sql.functions import udf, from_unixtime, date_format, regexp_extract, when, lit, lag, lead, coalesce, sum, rowNumber
 
 import re
@@ -38,8 +38,9 @@ NODE_CSV_PATH = os.path.join(os.environ.get('PBR_DATA', '/'), "phedex_node_kinds
 CONFIG_PATH = os.path.join(os.environ.get('PBR_CONFIG', '/'), "pbr.cfg")
 
 DELTA = "delta"
+AVERAGEDAY = "avg-day"
 LOGLEVELS = ["ALL", "DEBUG", "ERROR", "FATAL", "INFO", "OFF", "TRACE", "WARN"]                      # supported spark log levels
-AGGREGATIONS = ["sum", "count", "min", "max", "first", "last", "mean", "delta"]						# supported aggregation functions
+AGGREGATIONS = ["sum", "count", "min", "max", "first", "last", "mean", "delta", "avg-day"]			# supported aggregation functions
 GROUPKEYS = ["now", "dataset_name", "block_name", "node_name", "br_is_custiodial", "br_user_group",
             "data_tier", "acquisition_era", "node_kind", "now_sec"]									# supported group key values
 GROUPRES = ["block_files", "block_bytes", "br_src_files", "br_src_bytes", "br_dest_files", 
@@ -80,13 +81,15 @@ class OptionParser():
         self.parser.add_argument("--interval", action="store",
             dest="interval", default="1", help="Interval for delta operation in days")
         self.parser.add_argument("--filt", action="store",
-            dest="filt", default="", help="Filtering field:value")
+            dest="filt", default="", help="Filtering field:regex in csv format")
         self.parser.add_argument("--collect", action="store_true",
             dest="collect", default=False, help="Collect before writing to file")
         self.parser.add_argument("--logs", action="store",
             dest="logs", default="INFO", help="Set log level to one of: " % LOGLEVELS)
         self.parser.add_argument("--es", action="store_true",
             dest="es", default=False, help="Writes result to elastic search")
+        self.parser.add_argument("--esorigin", action="store",
+            dest="esorigin", default="custom", help="Writes an data origin field to elastic search")
 
 
 def schema():
@@ -202,7 +205,7 @@ def validateAggregationParams(keys, res, agg, order, filt):
     unsup_res = set(res).difference(set(GROUPRES))
     unsup_agg = set(agg).difference(set(AGGREGATIONS))
     unsup_ord = set(order).difference(set(keys + res)) if order != [''] else None
-    unsup_filt = filt if filt not in GROUPKEYS else None
+    unsup_filt = set(filt).difference(set(GROUPKEYS)) if filt != [''] else None
 
     msg = ""
     if unsup_keys:
@@ -417,6 +420,7 @@ def main():
     data_tier_reg = r"^/[^/]*/[^/^-]*-[^/]*/([^/]*)$"
     groupf = udf(lambda x: groupdic[x], StringType())
     nodef = udf(lambda x: nodedic[x], StringType())
+    regexudf = udf(lambda x, y: bool(regexp_extract(x, y, 1)), BooleanType())
 
     ndf = pdf.withColumn("br_user_group", groupf(pdf.br_user_group_id)) \
          .withColumn("node_kind", nodef(pdf.node_id)) \
@@ -438,12 +442,15 @@ def main():
     aggregations = [agg.strip() for agg in opts.aggregations.split(',')]
     order = [orde.strip() for orde in opts.order.split(',')] if opts.order else []
     asc = [asce.strip() for asce in opts.asc.split(',')] if opts.order else []
-    filtc, filtv = opts.filt.split(":") if opts.filt else (None,None)
+    filtc = [fil.split(':')[0] for fil in opts.filt.split(',')] if opts.filt else []
+    filtv = [fil.split(':')[1] for fil in opts.filt.split(',')] if opts.filt else []
+    isavgday = (AVERAGEDAY in aggregations)
 
     validateAggregationParams(keys, results, aggregations, order, filtc)
 
-    if filtc and filtv:
-        ndf = ndf.filter(getattr(ndf, filtc) == filtv)
+    # filtering data by regex
+    for index, val in enumerate(filtc):
+        ndf = ndf.filter(regexp_extract(getattr(ndf, val), filtv[index], 0) != "")
 
     # if delta aggregation is used
     if DELTA in aggregations:
@@ -492,8 +499,13 @@ def main():
                                                                     sum(ddf.delta_minus).alias("delta_minus"))
 
         aggres = aggres.select(aggres.node_name, interval_end(aggres.interval_group).alias("date"), aggres.delta_plus, aggres.delta_minus)
-		
-    else:	
+    
+    else:
+        if isavgday:
+            ndf.cache()
+            datescount = ndf.select(ndf.now).distinct().count()
+            aggregations = ["sum" if aggregation == "avg-day" else aggregation for aggregation in aggregations]
+        
         resAgg_dic = zipResultAgg(results, aggregations)
         order, asc = formOrdAsc(order, asc, resAgg_dic)
 
@@ -503,7 +515,13 @@ def main():
         else:
             aggres = ndf.groupBy(keys).agg(resAgg_dic)
 
-        aggres.cache()
+        # if average day then divide by dates count
+        if isavgday:
+            resfields = [resAgg_dic[result] + "(" + result + ")" for result in results]
+            for field in resfields:
+                aggres = aggres.withColumn(field, getattr(aggres, field)/datescount)
+
+    aggres.cache()
 
     # output results
     if opts.fout:
@@ -522,6 +540,7 @@ def main():
         
         if opts.es:
             validateEsParams(esnode, esport, esresource)
+            aggres = aggres.withColumn("origin", lit(opts.esorigin))
             aggres.repartition(1).write.format("org.elasticsearch.spark.sql").option("es.nodes", esnode)\
                                                                                  .option("es.port", esport)\
                                                                                  .option("es.resource", esresource)\
