@@ -35,3 +35,8 @@ datescount = ndf.select(ndf.now).distinct().count(
 for field in resfields:
   aggres = aggres.withColumn(field, getattr(aggres, field)/datescount)
 ```
+- Added possibility to filter by several fields using regex syntax
+```
+for index, val in enumerate(filtc):
+  ndf = ndf.filter(regexp_extract(getattr(ndf, val), filtv[index], 0) != "")
+```
