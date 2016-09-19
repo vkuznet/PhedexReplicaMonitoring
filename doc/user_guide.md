@@ -103,9 +103,9 @@ bash pbr.sh --yarn \
 		--results br_node_files,br_dest_files \
 		--aggregations sum \
 		--order br_node_bytes \
-		--asc 0
-		--fout hdfs:///user/arepecka/ReplicaMonitoring
-		--es
+		--asc 0 \
+		--fout hdfs:///user/arepecka/ReplicaMonitoring \
+		--es \
 		--esorigin cronjob
 		#--interval 1 
 		#--filt acquisition_era:Run2012.*,data_tier:^RAW$
