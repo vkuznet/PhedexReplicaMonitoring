@@ -108,11 +108,11 @@ bash pbr.sh --yarn \
 		--es
 		--esorigin cronjob
 		#--interval 1 
-        	#--filt acquisition_era:Run2012.*,data_tier:^RAW$
+		#--filt acquisition_era:Run2012.*,data_tier:^RAW$
 		#--header
 		#--fout hdfs:///user/arepecka/ReplicaMonitoring
 		#--verbose 
-        	#--collect
+		#--collect
 		#--logs INFO
 		#--fname hdfs:///project/awg/cms/phedex/block-replicas-snapshots/csv/time=2016-07-09_03h07m28s 
 
