@@ -94,8 +94,6 @@ Es is used for exporting aggregated data to elasticsearch. PBR_CONFIG environmen
 
 Esorigin is used for specifying the origin of data. It basically adds new column and fill with data specified in this parameter (it is done only for data that goes to elasticsearch, hdfs data remains untouched) .When using as a cronjob it should have value of "cronjob". Running script manually user should specify origin by himself (or leave empty - origin "custom"). This field should be later used for making searches in kibana (to select proper data, ex.: origin : cronjob).
 
-```
-
 ### Environment variables
 - SPARK_CSV_ASSEMBLY_JAR - spark-csv package path
 - ES_HADOOP_JAR - elasticsearch-hadoop package path
@@ -103,6 +101,7 @@ Esorigin is used for specifying the origin of data. It basically adds new column
 - PBR_DATA - path to external data needed (phedex_groups.csv, phedex_node_kinds.csv files). Ex.: ~/data
 - PBR_CONFIG - path to elasticsearch configuration (pbr.cfg). Ex.: ~/etc
 
+```
 bash pbr.sh --yarn \
 		--basedir hdfs:///project/awg/cms/phedex/block-replicas-snapshots/csv/ \
 		--fromdate 2015-08-04 \
