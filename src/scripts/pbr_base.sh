@@ -4,8 +4,8 @@
 
 bash pbr.sh --yarn \
             --basedir hdfs:///project/awg/cms/phedex/block-replicas-snapshots/csv/ \
-            --fromdate 2016-06-01 \
-            --todate 2016-09-18 \
+            --fromdate 2016-09-19 \
+            --todate 2016-09-19 \
             --aggregations sum \
             --results br_dest_bytes,br_node_bytes \
             --keys now,br_user_group,data_tier,acquisition_era,node_kind \

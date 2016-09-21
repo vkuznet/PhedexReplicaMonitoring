@@ -22,7 +22,7 @@ from pyspark.sql import SQLContext
 from pyspark.sql import HiveContext
 from pyspark.sql import DataFrame
 from pyspark.sql.window import Window
-from pyspark.sql.types import DoubleType, IntegerType, StructType, StructField, StringType, BooleanType
+from pyspark.sql.types import DoubleType, IntegerType, StructType, StructField, StringType, BooleanType, LongType
 from pyspark.sql.functions import udf, from_unixtime, date_format, regexp_extract, when, lit, lag, lead, coalesce, sum, rowNumber
 
 import re
@@ -42,7 +42,7 @@ AVERAGEDAY = "avg-day"
 LOGLEVELS = ["ALL", "DEBUG", "ERROR", "FATAL", "INFO", "OFF", "TRACE", "WARN"]                      # supported spark log levels
 AGGREGATIONS = ["sum", "count", "min", "max", "first", "last", "mean", "delta", "avg-day"]			# supported aggregation functions
 GROUPKEYS = ["now", "dataset_name", "block_name", "node_name", "br_is_custiodial", "br_user_group",
-            "data_tier", "acquisition_era", "node_kind", "now_sec"]									# supported group key values
+            "data_tier", "acquisition_era", "node_kind", "now_sec", "node_tier", "campaign"]	    # supported group key values
 GROUPRES = ["block_files", "block_bytes", "br_src_files", "br_src_bytes", "br_dest_files", 
             "br_dest_bytes", "br_node_files", "br_node_bytes", "br_xfer_files", "br_xfer_bytes"] 	# supported group result values
 
@@ -114,14 +114,14 @@ def schema():
                      StructField("node_name", StringType(), True),
                      StructField("node_id", IntegerType(), True),
                      StructField("br_is_active", StringType(), True),
-                     StructField("br_src_files", IntegerType(), True),
-                     StructField("br_src_bytes", DoubleType(), True),
-                     StructField("br_dest_files", IntegerType(), True),
-                     StructField("br_dest_bytes", DoubleType(), True),
-                     StructField("br_node_files", IntegerType(), True),
-                     StructField("br_node_bytes", DoubleType(), True),
-                     StructField("br_xfer_files", IntegerType(), True),
-                     StructField("br_xfer_bytes", DoubleType(), True),
+                     StructField("br_src_files", LongType(), True),
+                     StructField("br_src_bytes", LongType(), True),
+                     StructField("br_dest_files", LongType(), True),
+                     StructField("br_dest_bytes", LongType(), True),
+                     StructField("br_node_files", LongType(), True),
+                     StructField("br_node_bytes", LongType(), True),
+                     StructField("br_xfer_files", LongType(), True),
+                     StructField("br_xfer_bytes", LongType(), True),
                      StructField("br_is_custodial", StringType(), True),
                      StructField("br_user_group_id", IntegerType(), True),
                      StructField("replica_time_create", DoubleType(), True),
@@ -418,6 +418,8 @@ def main():
     groupdic, nodedic = getJoinDic()
     acquisition_era_reg = r"^/[^/]*/([^/^-]*)-[^/]*/[^/]*$"	
     data_tier_reg = r"^/[^/]*/[^/^-]*-[^/]*/([^/]*)$"
+    node_tier_reg = r"^(.{2})"
+    campaign_reg = r"^/[^/]*/([^/]*)-[^/]*/[^/]*$"
     groupf = udf(lambda x: groupdic[x], StringType())
     nodef = udf(lambda x: nodedic[x], StringType())
     regexudf = udf(lambda x, y: bool(regexp_extract(x, y, 1)), BooleanType())
@@ -428,7 +430,11 @@ def main():
          .withColumn("acquisition_era", when(regexp_extract(pdf.dataset_name, acquisition_era_reg, 1) == "",\
                     lit("null")).otherwise(regexp_extract(pdf.dataset_name, acquisition_era_reg, 1))) \
         .withColumn("data_tier", when(regexp_extract(pdf.dataset_name, data_tier_reg, 1) == "",\
-                    lit("null")).otherwise(regexp_extract(pdf.dataset_name, data_tier_reg, 1)))
+                    lit("null")).otherwise(regexp_extract(pdf.dataset_name, data_tier_reg, 1)))\
+        .withColumn("node_tier", when(regexp_extract(pdf.node_name, node_tier_reg, 1) == "",\
+                    lit("null")).otherwise(regexp_extract(pdf.node_name, node_tier_reg, 1)))\
+        .withColumn("campaign", when(regexp_extract(pdf.dataset_name, campaign_reg, 1) == "",\
+                    lit("null")).otherwise(regexp_extract(pdf.dataset_name, campaign_reg, 1)))
 
 	# print dataframe schema
     if opts.verbose:

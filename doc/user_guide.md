@@ -27,7 +27,7 @@ Tdate is used for specifying date until which hdfs files in basedir will be proc
 Keys are used for specifying key fields for group operation. Keys are expected to be written in csv manner. If not - user gets an error. If parameter is not set - default value is set (dataset_name, node_name). Possible values for keys:
 
 ```
-now_sec, now, dataset_name, block_name, node_name, br_is_custiodial, br_user_group, data_tier, acquisition_era, node_kind
+now_sec, now, dataset_name, block_name, node_name, br_is_custiodial, br_user_group, data_tier, acquisition_era, node_kind, node_tier, campaign
 ```
 
 ### results
