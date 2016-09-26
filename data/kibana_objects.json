@@ -1,0 +1,200 @@
+[
+  {
+    "_id": "pbr-cronjob_disk_mss:br_user_group-acquisition_era-data_tier-br_node_bytes",
+    "_type": "dashboard",
+    "_source": {
+      "title": "pbr-cronjob_disk_mss:br_user_group-acquisition_era-data_tier-br_node_bytes:yesterday",
+      "hits": 0,
+      "description": "",
+      "panelsJSON": "[\n  {\n    \"col\": 1,\n    \"id\": \"pbr-cronjob_disk:br_user_group-acquisition_era-br_node_bytes\",\n    \"panelIndex\": 1,\n    \"row\": 1,\n    \"size_x\": 12,\n    \"size_y\": 5,\n    \"type\": \"visualization\"\n  },\n  {\n    \"id\": \"pbr-cronjob_disk:br_user_group-data_tier-br_node_bytes\",\n    \"type\": \"visualization\",\n    \"panelIndex\": 2,\n    \"size_x\": 12,\n    \"size_y\": 5,\n    \"col\": 1,\n    \"row\": 6\n  },\n  {\n    \"id\": \"pbr-cronjob_mss:br_user_group-acquisition_era-br_node_bytes\",\n    \"type\": \"visualization\",\n    \"panelIndex\": 3,\n    \"size_x\": 12,\n    \"size_y\": 4,\n    \"col\": 1,\n    \"row\": 11\n  },\n  {\n    \"id\": \"pbr-cronjob_mss:br_user_group-data_tier-br_node_bytes\",\n    \"type\": \"visualization\",\n    \"panelIndex\": 4,\n    \"size_x\": 12,\n    \"size_y\": 4,\n    \"col\": 1,\n    \"row\": 15\n  }\n]",
+      "optionsJSON": "{\n  \"darkTheme\": false\n}",
+      "uiStateJSON": "{}",
+      "version": 1,
+      "timeRestore": true,
+      "timeTo": "now-1d/d",
+      "timeFrom": "now-1d/d",
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\n  \"filter\": [\n    {\n      \"query\": {\n        \"query_string\": {\n          \"analyze_wildcard\": true,\n          \"query\": \"*\"\n        }\n      }\n    }\n  ]\n}"
+      }
+    }
+  },
+  {
+    "_id": "pbr-cronjob_disk_mss:br_user_group-acquisition_era-data_tier-br_node_bytes:7days",
+    "_type": "dashboard",
+    "_source": {
+      "title": "pbr-cronjob_disk_mss:br_user_group-acquisition_era-data_tier-br_node_bytes:7days",
+      "hits": 0,
+      "description": "",
+      "panelsJSON": "[{\"col\":1,\"id\":\"pbr-cronjob_disk:br_user_group-acquisition_era-br_node_bytes:bar\",\"panelIndex\":1,\"row\":1,\"size_x\":12,\"size_y\":8,\"type\":\"visualization\"},{\"col\":1,\"id\":\"pbr-cronjob_disk:br_user_group-data_tier-br_node_bytes:bar\",\"panelIndex\":2,\"row\":9,\"size_x\":12,\"size_y\":7,\"type\":\"visualization\"},{\"id\":\"pbr-cronjob_mss:br_user_group-acquisition_era-br_node_bytes:bar\",\"type\":\"visualization\",\"panelIndex\":3,\"size_x\":12,\"size_y\":7,\"col\":1,\"row\":16},{\"id\":\"pbr-cronjob_mss:br_user_group-data_tier-br_node_bytes:bar\",\"type\":\"visualization\",\"panelIndex\":4,\"size_x\":12,\"size_y\":6,\"col\":1,\"row\":23}]",
+      "optionsJSON": "{\"darkTheme\":false}",
+      "uiStateJSON": "{}",
+      "version": 1,
+      "timeRestore": true,
+      "timeTo": "now",
+      "timeFrom": "now-7d",
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[{\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}}}]}"
+      }
+    }
+  },
+  {
+    "_id": "pbr-cronjob-disk",
+    "_type": "search",
+    "_source": {
+      "title": "pbr-cronjob-disk",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "_source"
+      ],
+      "sort": [
+        "now",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"block-replicas\",\"query\":{\"query_string\":{\"query\":\"origin : cronjob AND node_kind : Disk\",\"analyze_wildcard\":true}},\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647}}"
+      }
+    }
+  },
+  {
+    "_id": "pbr-cronjob-mss",
+    "_type": "search",
+    "_source": {
+      "title": "pbr-cronjob-mss",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "_source"
+      ],
+      "sort": [
+        "now",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"block-replicas\",\"query\":{\"query_string\":{\"query\":\"origin : cronjob AND node_kind : MSS\",\"analyze_wildcard\":true}},\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647}}"
+      }
+    }
+  },
+  {
+    "_id": "pbr-cronjob_disk:br_user_group-data_tier-br_node_bytes:bar",
+    "_type": "visualization",
+    "_source": {
+      "title": "pbr-cronjob_disk:br_user_group-data_tier-br_node_bytes:bar",
+      "visState": "{\"title\":\"pbr-cronjob_disk:br_user_group-acquisition_era-br_node_bytes:bar\",\"type\":\"histogram\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":true,\"setYExtents\":false,\"yAxis\":{}},\"aggs\":[{\"id\":\"1\",\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"sum(br_node_bytes)\",\"customLabel\":\"Node Bytes\"}},{\"id\":\"2\",\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"now\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"Date\"}},{\"id\":\"4\",\"type\":\"terms\",\"schema\":\"split\",\"params\":{\"field\":\"br_user_group\",\"size\":3,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"User Group\",\"row\":true}},{\"id\":\"3\",\"type\":\"terms\",\"schema\":\"group\",\"params\":{\"field\":\"data_tier\",\"size\":20,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"Acquisition Era\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "pbr-cronjob-disk",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "pbr-cronjob_disk:br_user_group-acquisition_era-br_node_bytes:bar",
+    "_type": "visualization",
+    "_source": {
+      "title": "pbr-cronjob_disk:br_user_group-acquisition_era-br_node_bytes:bar",
+      "visState": "{\"title\":\"pbr-cronjob_disk:br_user_group-acquisition_era-br_node_bytes:bar\",\"type\":\"histogram\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":true,\"setYExtents\":false,\"yAxis\":{}},\"aggs\":[{\"id\":\"1\",\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"sum(br_node_bytes)\",\"customLabel\":\"Node Bytes\"}},{\"id\":\"2\",\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"now\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"Date\"}},{\"id\":\"4\",\"type\":\"terms\",\"schema\":\"split\",\"params\":{\"field\":\"br_user_group\",\"size\":3,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"User Group\",\"row\":true}},{\"id\":\"3\",\"type\":\"terms\",\"schema\":\"group\",\"params\":{\"field\":\"acquisition_era\",\"size\":20,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"Acquisition Era\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "pbr-cronjob-disk",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "pbr-cronjob_mss:br_user_group-acquisition_era-br_node_bytes:bar",
+    "_type": "visualization",
+    "_source": {
+      "title": "pbr-cronjob_mss:br_user_group-acquisition_era-br_node_bytes:bar",
+      "visState": "{\"title\":\"New Visualization\",\"type\":\"histogram\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"yAxis\":{}},\"aggs\":[{\"id\":\"1\",\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"sum(br_node_bytes)\",\"customLabel\":\"Node Bytes\"}},{\"id\":\"2\",\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"now\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"Date\"}},{\"id\":\"3\",\"type\":\"terms\",\"schema\":\"split\",\"params\":{\"field\":\"br_user_group\",\"size\":3,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"User group\",\"row\":true}},{\"id\":\"4\",\"type\":\"terms\",\"schema\":\"group\",\"params\":{\"field\":\"acquisition_era\",\"size\":20,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"Acquisition Era\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "pbr-cronjob-mss",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "pbr-cronjob_mss:br_user_group-acquisition_era-br_node_bytes",
+    "_type": "visualization",
+    "_source": {
+      "title": "pbr-cronjob_mss:br_user_group-acquisition_era-br_node_bytes:pie",
+      "visState": "{\n  \"title\": \"New Visualization\",\n  \"type\": \"pie\",\n  \"params\": {\n    \"shareYAxis\": true,\n    \"addTooltip\": true,\n    \"addLegend\": true,\n    \"isDonut\": false\n  },\n  \"aggs\": [\n    {\n      \"id\": \"1\",\n      \"type\": \"sum\",\n      \"schema\": \"metric\",\n      \"params\": {\n        \"field\": \"sum(br_node_bytes)\",\n        \"customLabel\": \"Node Bytes\"\n      }\n    },\n    {\n      \"id\": \"2\",\n      \"type\": \"terms\",\n      \"schema\": \"split\",\n      \"params\": {\n        \"field\": \"br_user_group\",\n        \"size\": 5,\n        \"order\": \"desc\",\n        \"orderBy\": \"1\",\n        \"customLabel\": \"User Group\",\n        \"row\": false\n      }\n    },\n    {\n      \"id\": \"3\",\n      \"type\": \"terms\",\n      \"schema\": \"segment\",\n      \"params\": {\n        \"field\": \"acquisition_era\",\n        \"size\": 20,\n        \"order\": \"desc\",\n        \"orderBy\": \"1\",\n        \"customLabel\": \"Acquisition Era\"\n      }\n    }\n  ],\n  \"listeners\": {}\n}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "pbr-cronjob-mss",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\n  \"filter\": []\n}"
+      }
+    }
+  },
+  {
+    "_id": "pbr-cronjob_disk:br_user_group-acquisition_era-br_node_bytes",
+    "_type": "visualization",
+    "_source": {
+      "title": "pbr-cronjob_disk:br_user_group-acquisition_era-br_node_bytes:pie",
+      "visState": "{\n  \"title\": \"pbr-br_user_group-acquisition_era-br_node_bytes-yesterday\",\n  \"type\": \"pie\",\n  \"params\": {\n    \"shareYAxis\": true,\n    \"addTooltip\": true,\n    \"addLegend\": true,\n    \"isDonut\": false\n  },\n  \"aggs\": [\n    {\n      \"id\": \"1\",\n      \"type\": \"sum\",\n      \"schema\": \"metric\",\n      \"params\": {\n        \"field\": \"sum(br_node_bytes)\",\n        \"customLabel\": \"Node Bytes\"\n      }\n    },\n    {\n      \"id\": \"2\",\n      \"type\": \"terms\",\n      \"schema\": \"split\",\n      \"params\": {\n        \"field\": \"br_user_group\",\n        \"size\": 5,\n        \"order\": \"desc\",\n        \"orderBy\": \"1\",\n        \"customLabel\": \"User Group\",\n        \"row\": false\n      }\n    },\n    {\n      \"id\": \"3\",\n      \"type\": \"terms\",\n      \"schema\": \"segment\",\n      \"params\": {\n        \"field\": \"acquisition_era\",\n        \"size\": 20,\n        \"order\": \"desc\",\n        \"orderBy\": \"1\",\n        \"customLabel\": \"Acquisition Era\"\n      }\n    }\n  ],\n  \"listeners\": {}\n}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "pbr-cronjob-disk",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\n  \"filter\": []\n}"
+      }
+    }
+  },
+  {
+    "_id": "pbr-cronjob_disk:br_user_group-data_tier-br_node_bytes",
+    "_type": "visualization",
+    "_source": {
+      "title": "pbr-cronjob_disk:br_user_group-data_tier-br_node_bytes:pie",
+      "visState": "{\n  \"title\": \"pbr-cronjob_disk:br_user_group-acquisition_era-br_node_bytes\",\n  \"type\": \"pie\",\n  \"params\": {\n    \"shareYAxis\": true,\n    \"addTooltip\": true,\n    \"addLegend\": true,\n    \"isDonut\": false\n  },\n  \"aggs\": [\n    {\n      \"id\": \"1\",\n      \"type\": \"sum\",\n      \"schema\": \"metric\",\n      \"params\": {\n        \"field\": \"sum(br_node_bytes)\",\n        \"customLabel\": \"Node Bytes\"\n      }\n    },\n    {\n      \"id\": \"2\",\n      \"type\": \"terms\",\n      \"schema\": \"split\",\n      \"params\": {\n        \"field\": \"br_user_group\",\n        \"size\": 5,\n        \"order\": \"desc\",\n        \"orderBy\": \"1\",\n        \"customLabel\": \"User Group\",\n        \"row\": false\n      }\n    },\n    {\n      \"id\": \"3\",\n      \"type\": \"terms\",\n      \"schema\": \"segment\",\n      \"params\": {\n        \"field\": \"data_tier\",\n        \"size\": 20,\n        \"order\": \"desc\",\n        \"orderBy\": \"1\",\n        \"customLabel\": \"Acquisition Era\"\n      }\n    }\n  ],\n  \"listeners\": {}\n}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "pbr-cronjob-disk",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\n  \"filter\": []\n}"
+      }
+    }
+  },
+  {
+    "_id": "pbr-cronjob_mss:br_user_group-data_tier-br_node_bytes",
+    "_type": "visualization",
+    "_source": {
+      "title": "pbr-cronjob_mss:br_user_group-data_tier-br_node_bytes:pie",
+      "visState": "{\n  \"title\": \"pbr-cronjob_mss:br_user_group-acquisition_era-br_node_bytes\",\n  \"type\": \"pie\",\n  \"params\": {\n    \"shareYAxis\": true,\n    \"addTooltip\": true,\n    \"addLegend\": true,\n    \"isDonut\": false\n  },\n  \"aggs\": [\n    {\n      \"id\": \"1\",\n      \"type\": \"sum\",\n      \"schema\": \"metric\",\n      \"params\": {\n        \"field\": \"sum(br_node_bytes)\",\n        \"customLabel\": \"Node Bytes\"\n      }\n    },\n    {\n      \"id\": \"2\",\n      \"type\": \"terms\",\n      \"schema\": \"split\",\n      \"params\": {\n        \"field\": \"br_user_group\",\n        \"size\": 5,\n        \"order\": \"desc\",\n        \"orderBy\": \"1\",\n        \"customLabel\": \"User Group\",\n        \"row\": false\n      }\n    },\n    {\n      \"id\": \"3\",\n      \"type\": \"terms\",\n      \"schema\": \"segment\",\n      \"params\": {\n        \"field\": \"data_tier\",\n        \"size\": 20,\n        \"order\": \"desc\",\n        \"orderBy\": \"1\",\n        \"customLabel\": \"Data Tier\"\n      }\n    }\n  ],\n  \"listeners\": {}\n}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "pbr-cronjob-mss",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\n  \"filter\": []\n}"
+      }
+    }
+  },
+  {
+    "_id": "pbr-cronjob_mss:br_user_group-data_tier-br_node_bytes:bar",
+    "_type": "visualization",
+    "_source": {
+      "title": "pbr-cronjob_mss:br_user_group-data_tier-br_node_bytes:bar",
+      "visState": "{\"title\":\"pbr-cronjob_mss:br_user_group-acquisition_era-br_node_bytes:bar\",\"type\":\"histogram\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"yAxis\":{}},\"aggs\":[{\"id\":\"1\",\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"sum(br_node_bytes)\",\"customLabel\":\"Node Bytes\"}},{\"id\":\"2\",\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"now\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"Date\"}},{\"id\":\"3\",\"type\":\"terms\",\"schema\":\"split\",\"params\":{\"field\":\"br_user_group\",\"size\":3,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"User group\",\"row\":true}},{\"id\":\"4\",\"type\":\"terms\",\"schema\":\"group\",\"params\":{\"field\":\"data_tier\",\"size\":20,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"Acquisition Era\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "pbr-cronjob-mss",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  }
+]
