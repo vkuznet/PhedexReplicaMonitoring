@@ -4,16 +4,16 @@
 
 bash pbr.sh --yarn \
             --basedir hdfs:///project/awg/cms/phedex/block-replicas-snapshots/csv/ \
-            --fromdate 2016-09-19 \
-            --todate 2016-09-19 \
+            --fromdate 2015-08-31 \
+            --todate 2016-08-31 \
             --aggregations sum \
             --results br_dest_bytes,br_node_bytes \
             --keys now,br_user_group,data_tier,acquisition_era,node_kind \
-            --order br_node_bytes \
-            --asc 0 \
-            --es \
-            --esorigin cronjob \
             --fout hdfs:///user/arepecka/ReplicaMonitoring \
+            #--order br_node_bytes \
+            #--asc 0 \
+            #--es \
+            #--esorigin cronjob \
             #--interval 1 \
             #--header
             #--collect
