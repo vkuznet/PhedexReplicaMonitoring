@@ -43,7 +43,7 @@ block_files, block_bytes, br_src_files, br_src_bytes, br_dest_files, br_dest_byt
 Aggregations are used for specifying aggregation functions for group operation. If the same aggregation function should be used fo all results columns then it is enough to specify one aggregation function. If user wants to specify different aggregation functions for different columns then aggregations is expected to be written in csv manner and in the exact order as results were specified. If parameter is not set - default value is set (sum) for all results elements. Possible values for aggregations:
 
 ```
-sum, count, min, max, first, last, mean, avg-day
+sum, count, min, max, first, last, mean, avg-day, delta
 ```
 * Aggregation avg-day simply sums all result data and divides it by distinct days count
 
