@@ -1,0 +1,866 @@
+\documentclass{cernyrep} 
+\usepackage{texnames}
+\usepackage[T1]{fontenc}
+\pagestyle{plain}
+\begin{document}
+\title{Preparing contributions to CERN reports (school, workshop, and
+conference proceedings)}
+ 
+\author{Scientific Text Processing Team}
+
+\institute{CERN, Geneva, Switzerland}
+
+\maketitle % this produces the title block
+
+ 
+\begin{abstract}
+This document explains instructions for authors who want to prepare
+electronic copy to be published as a CERN Report.
+\end{abstract}
+ 
+\section{Introduction}
+ 
+Authors must observe the following instructions to ensure consistency
+and uniformity in the style and layout of CERN Reports.  Wherever
+possible, each contribution will go directly to be printed, without
+any editing, and should therefore be in its final form.
+
+Although the typesetting rules that are described are of a general
+nature, the present document emphasizes their use with
+\LaTeX. Templates and more detailed information for \emph{Word} users
+are available on the DTP Web site (\emph{Word} Section at the page
+\url{http://cern.ch/DTP/dtpcernreport.htm}).
+ 
+Note that it is the author's responsibility to obtain permission from
+the copyright holder if material taken from other sources is included
+in the source submitted as a CERN Report.
+
+\section{Generalities on typing}
+
+When submitting your electronic source in \LaTeX{}, you must use the
+\texttt{cernrep} class file, which is available from the DTP Web site
+(\url{http://cern.ch/DTP}). Moreover, specific instructions for preparing
+your \LaTeX{} contribution are given in the appendices.
+
+\subsection{Format for the text}
+ 
+Take care that your material stays inside the text frame which is
+16~cm $\times$ 24~cm (\ie a A4 sized paper has 3.0~cm margins at the
+top and at the bottom, and 2.5~cm left and right). This is expecially
+true for figures and tabular content.
+
+\section{Parts of the text}
+
+\subsection{Abstract}
+
+Your contribution should be preceded by an abstract of not more than
+150 words, written as a single paragraph.
+
+
+\subsection{Sectioning commands and paragraphs}
+\label{sec:sections}
+
+The standard \LaTeX{} commands \Lcs{section} (level 1),
+\Lcs{subsection} (level 2), \Lcs{subsubsection} (level 3),
+\Lcs{subsubsubsection} (level 4), should be used for headings.  Do not
+start a new section on a new page, but continue on the same page.
+
+In the text, leave a blank line after each paragraph.
+
+\subsection{Equations}
+\label{sec:equations}
+
+Equations should be treated as part of the text, and therefore
+punctuated (with a space between the end of the equation and the
+punctuation mark).  Equations are numbered consecutively throughout
+the report. 
+
+An unnumbered single formula is delimited by \Lcs{[} and \Lcs{]}
+(alternatively a \Lenv{displaymath} environment can be used), while a
+numbered equation is generated with the \Lenv{equation} environment.
+You should \textbf{never} use the \texttt{\$\$} construct.  The CERN
+\LaTeX{} classes automatically load the \texttt{amsmath} class, which
+offers a large choice of constructs for typesetting
+mathematics~\cite{bib:voss2005}. See also Appendix~\ref{app:amsmath}
+for some hints about using the \texttt{amsmath} extensions in an
+optimal way.
+
+For cross-referencing equations use the \LaTeX{} commands \Lcs{label}
+and \Lcs{ref}, as explained in \Sref{sec:crossref}.
+A simple example, with a cross-reference to a formula, follows.
+
+\begin{verbatim}
+\section{Section title}
+\label{sec:mysection}
+Einstein has expressed the relation between energy $E$ 
+and mass $m$ in his famous equation~(\ref{eq:einstein}):
+\begin{equation}
+E=mc^2 \label{eq:einstein}
+\end{equation}
+\end{verbatim}
+
+\subsection{Figures}
+\label{sec:figures}
+
+\subsubsection{How to supply figures}
+
+Where possible, figures should be prepared electronically.  Make sure
+that the image is of high quality when printed (in black and white)
+and is of high enough resolution (min. 300 dots per inch). We accept
+PICT, TIFF, PNG,and JPEG files.  Encapsulated PostScript (EPS) files
+are preferred, but in any case, send us your illustrations in their
+\emph{original} format (PNG, JPEG, \etc), there is no need for you to
+reprocess them yourself.
+
+If you cannot provide electronic copies, or if we consider that your
+files do not print out well, you should provide a good-quality paper
+original. In this case we will arrange for it to be scanned at CERN
+and included in the report.
+
+Do not use free-hand lettering for the labelling of figures. All lines
+should be drawn in red or black ink and be heavy enough (min. 0.75
+point) and all figures, decimal points, symbols, \etc, large enough
+and sufficiently spaced to ensure clarity when printed \emph{at the
+final size}. If using colour, please ensure that the figure prints
+clearly in greyscale and adapt your text knowing that the difference
+between coloured items when reproduced in grey is not obvious.
+
+As already mentioned, before using material such as illustrations
+taken from other sources, do not forget to obtain permission from the
+copyright holder.
+
+\subsubsection{Positioning and layout}
+
+All figures must remain within the page area (\Unit{16}{cm} $\times$
+\Unit{24}{cm}), where, if necessary, the page may be turned 90$^\circ$
+to accommodate the figure. When this is done, the caption must be
+oriented in the same way as the figure, and no other text may appear
+on that page.  The bottom of the turned illustrations should be at the
+right-hand side of the page.
+
+\subsubsection{Including your figure}
+
+Figures are included with the \Lenv{figure} environment. In the
+example that follows we include an EPS graphics file
+(\texttt{myfig.eps}, where the extension \texttt{.eps} does not need
+to be specified since it is the default) with the
+\Lcs{includegraphics} command, which is defined in the
+\texttt{graphicx} package that is loaded by default by the CERN
+\LaTeX{} classes.
+
+The figure caption (specified as argument of the \Lcs{caption}
+command), must \emph{follow} the figure body, and should be brief. No
+full stop is necessary unless the caption is more that one sentence
+long, in which case full punctuation should be used.
+
+\subsubsubsection{Example}
+
+An example with a cross-reference to a figure follows. The reference
+is defined by the \Lcs{label} command \emph{following} the
+\Lcs{caption} command. A cross-reference is generated with the
+\Lcs{ref} command on the second line. Note the cross-reference key
+(\texttt{fig:myfig}) which clearly indicates that it refers to a
+figure (see \Sref{sec:crossref} for a discussion of the importance of
+using good keys).
+\begin{verbatim}
+\section{Section title}
+In Fig.~\ref{fig:myfig} we see that ...
+\begin{figure}
+\centering\includegraphics[width=.9\linewidth]{myfig}
+\caption{Description of my figure}
+\label{fig:myfig}
+\end{figure}
+\end{verbatim}
+
+\subsubsection{References to figures}
+
+\LaTeX's cross-reference mechanism can be used to refer to figures.  A
+figure is defined with the \Lcs{label} command, which must
+\emph{follow} the \Lcs{caption} command.
+
+Figures must be referenced in the text in consecutive numerical order
+with the help of the \Lcs{ref} command. Examples of references to
+figures and how to produce them follow (see also \Tref{tab:predef}).
+\begin{itemize}
+\item `Fig. 3' produced by, \eg \verb!\Fref{fig:myfig}!,
+\item `Figs. 3--5' produced by, \eg
+       \verb!\Figures~\ref{fig:myfiga}--\ref{fig:myfigb}!,
+\item `Figure 3', produced by, \eg \verb!\Figure[b]~\ref{fig:myfig}!. 
+       Note the use of the optional argument \texttt{[b]}, which
+       indicates that the word `Figure' should be typeset in full,
+       in particular at the beginning of a sentence.
+\end{itemize}
+Figures with several parts are cited as follows: `Fig. 2(a) and (b),
+Figs. 3(a)--(c)'.
+
+Figures and illustrations \emph{should follow} the paragraph in which
+they are first discussed.  If this is not feasible, they may be placed
+on the following page (\LaTeX{}'s float mechanism takes care of this
+automatically, in principle). If it is not possible to place
+\emph{all} numbered figures in the text, then they should \emph{all}
+be placed at the end of the paper.
+
+\subsection{Tables}
+
+Tables are defined the the \texttt{table} environment.  Each table
+should be centred on the page width, with a brief caption (specified
+as argument of the \Lcs{caption} command) \emph{preceding} the table
+body.
+
+In general, tables should be open, drawn with a double thin horizontal
+line (0.4~pt) at the top and bottom, and single horizontal line
+(0.4~pt) separating column headings from data.
+
+Like figures, tables must be referenced in the text in consecutive
+numerical order with \LaTeX's \Lcs{ref} command. Examples of
+cross-references to tables follow (commands that can be used to
+generate the given text strings are shown between parentheses): `Table
+5' (\eg \verb!\Tref{tab:mytab}! or \verb!\Table~\ref{tab:mytab}!),
+`Tables 2--3' (\eg
+\verb!\Tables~\ref{tab:mytaba}--\ref{tab:mytabb}!). The word `Table'
+should never be abbreviated.
+
+\subsubsection{Formatting and layout within the table}
+
+Write the headings in sentence case but do not use full stops. Units
+should be entered in parentheses on a separate line below the column
+heading. (If the same unit is used throughout the table, it should be
+written in parentheses on a separate line below the caption.)
+
+Unsimilar items should be aligned on the left, whereas similar items
+should be aligned on the operator or decimal point. All decimal points
+must be preceded by a digit.
+
+\subsubsubsection{Table captions}
+
+Table captions should be brief and placed centrally \emph{above} the
+table. No full stop is necessary unless the caption is more that one
+sentence long, in which case full punctuation should be used. 
+
+\subsubsubsection{Notes in the table}
+
+Notes in tables should be designated by superscript lower-case
+letters, and begun anew for each table. The superscript letter should
+be placed in alphabetical order moving from left to right across the
+first row and down to the last. The notes should then be listed
+directly under the table.
+
+References cited in tables should appear in consecutive numerical
+order, following the order explained above for notes (left to right,
+top to bottom).  They should appear exactly as references cited in the
+main body of the document (and be treated as part of the text in terms
+of numbering, so be careful when moving tables containing references).
+
+\subsubsubsection{Example}
+
+An instance of a simple table, following the proposed rules follows.
+Notice the \Lcs{hline} commands at the beginning and end of the
+\texttt{tabular} environment to generate the double lines at the top
+and the bottom of the table, as well as the single \Lcs{hline} command
+to separate the heading from the data.
+
+\begin{verbatim}
+\section{Section title}
+Table~\ref{tab:famous} shows three famous mathematical constants.
+\begin{table}
+\caption{Famous constants}
+\label{tab:famous}
+\centering
+\begin{tabular}{lll}\hline\hline
+symbol & description               & approximate value\\\hline
+$e$    & base of natural logarithm & $2.7182818285$   \\
+$\pi$  & ratio circle circumference to diameter &
+                                     $3.1415926536$   \\
+$\phi$ & golden ratio              & $1.6180339887$   \\\hline\hline
+\end{tabular}
+\end{table}
+\end{verbatim}
+
+\subsection{Bibliographical references}
+\label{sec:biblioref}
+
+References should be cited in the text using numbers within square
+brackets: `example~[1], example~[1, 2], example~[1--5]'. This is
+achieved with the \Lcs{cite} command. One can also write `see
+Ref.~[1]', `Refs.~[1]--[5]', and, at the beginning of a sentence,
+`Reference~[2]'. These strings can be produced as follows (see also
+\Tref{tab:predef}).
+\begin{itemize}
+\item \verb!\Bref{bib:mybiba}! or \verb!\Ref~\cite{bib:mybiba}! 
+      typeset, \eg `Ref.~[1]'.
+\item \verb!\Refs~\cite{bib:mybiba}--\cite{tab:mybibb}!, 
+      typesets, \eg `Refs~[1--5].
+\item \verb!\Bref[b]~\ref{bib:mybibc}! typesets, \eg `Reference~[3]'.
+       The optional argument \texttt{[b]} indicates that the word
+       `Reference' should be typeset in full, in particular at the
+       beginning of a sentence.
+\end{itemize}
+
+Bibliographical references should appear in consecutive numerical
+order and should be listed in numerical order at the end of the
+text. Punctuation can be used either within or outside the brackets,
+but please ensure one method is used consistently throughout the
+contribution.
+
+\subsubsection{List of references}
+
+The list of references (the \Lcs{bibitem} entries) must all be grouped
+inside a \Lenv{thebibliography} environment, as follows.
+
+\begin{verbatim}
+\section{Section title}
+Work by Einstein~\cite{bib:einstein} as well as \Bref{bib:gravitation}
+explains the theory of relativity.
+...
+\begin{thebibliography}
+\bibitem{bib:einstein}} ...
+\bibitem{bib:gravitation} ...
+  ...
+\end{thebibliography}
+\end{verbatim}
+As shown, each \Lcs{bibitem} is identified with a reference key
+(\texttt{bib:einstein}, \texttt{bib:gravitation}, \etc), which allows
+one to refer to the relevant bibliography entry with a
+\verb|\cite{bib:einstein}| command in the text. The information about
+each entry can be specified in a separate file, \eg
+\texttt{mybib.bbl}, which can be read by the \BibTeX{} program for
+generating the list of references (see a \LaTeX{} manual or Chapter~12
+of Ref.~\cite{bib:mittelbach2004} for details).
+
+Unless you are near the bottom of the last page of text, do \emph{not}
+start a new page for the list of references, but continue on the same
+page. Note that in the list of references it is unnecessary to state
+the title of an article or chapter in proceedings or in a collection
+of papers unless a page number cannot be quoted, \eg for forthcoming
+publications.
+
+For abbreviations of names of journals quoted in the references, see
+the \emph{Journal abbreviations} entry available from the Web page at
+the URL \url{http://cern.ch/DTP/dtpgrammar.htm}\footnote{% The Reviews
+of Modern Physics site: \url{http://rmp.aps.org/info/manprep.html}
+also has a list.}. The entry \emph{Citation of references} on the same
+Web page shows more details on how to present references.
+
+If you need to provide a bibliography, this should come after the list
+of references.
+
+\subsection{Footnotes}
+
+Footnotes are to be avoided. If absolutely necessary, they should be
+brief, and placed at the bottom of the page on which they are referred
+to. Take care when citing references in the footnotes to ensure that
+these are correctly numbered.
+
+\subsection{Referencing structural elements}
+\label{sec:crossref}
+
+In this section we give a general overview of \LaTeX's reference
+mechanism which makes it easy to reference structural elements. First
+a \Lcs{label} command, with a unique \emph{key} as its argument to
+identify the structural element in question, must be placed in the
+source, as follows.
+
+\begin{itemize}
+\item For sectioning commands, such as \Lcs{section},
+      \Lcs{subsection}, \Lcs{subsubsection}, the \Lcs{label} command
+      must \emph{follow} it.
+\item Inside \texttt{figure} and \texttt{table} environments, the 
+      \Lcs{label} command must be placed \emph{after} the \Lcs{caption}
+      command.
+\item Inside an \texttt{equation} environment the \Lcs{label} command
+      can be placed anywhere.
+\item Inside an \texttt{eqnarray} environment, the \Lcs{label} command
+      can be used to identify each line, so that it must be placed
+      \emph{before} each end-of-line \Lcs{\bs}. If for a given line no
+      line-number has to be produced, a \Lcs{nonumber} command should
+      be used.
+\item Inside an \texttt{enumerate} environment a \Lcs{label} command
+      can be associated with each \Lcs{item} command.
+\item Inside a \texttt{footnote} a \Lcs{label} command can be placed
+      anywhere.
+\end{itemize}
+As seen in all the examples in this document, for reasons of clarity
+it is best to place the \Lcs{label} command immediately
+\emph{following} the element if refers to (rather than inserting it
+inside its contents).
+
+From any place in the document one can refer to a structural element
+identified with a \Lcs{label} command with the help of a \Lcs{ref}
+command. An example follows.
+
+\begin{verbatim}
+\section{My first section}\label{sec:first}
+Figure~\ref{fig:fdesc} in Section~\ref{sec:second} shows \dots
+\begin{table}
+\caption{table caption text}\label{tab:tdesc}
+...
+\end{table}
+\begin{equation}
+\exp{i\pi}+1=0\label{eq:euler}
+\end{equation}
+\section{My second section}\label{sec:second}
+In Section~\ref{sec:first} contains Table~\ref{tab:tdesc} and
+Eq.~\ref{eq:euler}
+\begin{figure}
+\centering\includegraphics[...]{...}
+caption{Text of figure caption}
+\label{fig:fdesc}
+\end{figure}
+\end{verbatim}
+To easily differentiate between references to the various structural
+elements it is good practice to start the key with a few characters
+identifying it (\eg \texttt{sec:} for a sectioning command, such as
+\Lcs{section}, \Lcs{subsection}, \etc, \texttt{fig:} for figures,
+\texttt{tab:} for tables, and \texttt{eq:} for equations, including
+\texttt{eqnarray} environments (which should have a \Lcs{label}
+command placed before the \Lcs{\bs} if you want to identify the line
+in question). The second part of the key should identify the
+particular element clearly, \eg use of a mnemonic component, such as
+\texttt{eq:euler} in the example of the equation reference
+above. Avoid using keys with only digits, such as \texttt{f1},
+\texttt{f2}, \etc, since, if for any reason structural elements are
+eliminated or change position in the source, confusion can result.
+
+\subsection{Appendices}
+
+Each appendix should be laid out as the sections in the text.
+Appendices should be labelled alphabetically and be referred to as
+Appendix A, Appendices A--C, \etc Equations, figures and tables should
+be quoted as Eq. (A.1) and Fig. A.1, \etc
+
+\subsection{Acknowledgements}
+
+If required, acknowledgements should appear as an unnumbered
+subsection immediately before the references section.
+
+\section{Spelling and grammar}
+
+For more information on English grammar rules and commonly misused
+words and expressions (including a guide to avoiding `franglais'),
+please see the files available from the DTP Web pages.
+
+\subsection{Spelling}
+
+CERN uses British English spelling, and `-ize' rather that
+`-ise'. Here we provide a few examples for guidance:
+\begin{flushleft}
+\begin{tabularx}{\linewidth}{@{}lX}
+-il:     & fulfil (not fulfill) \\
+-re:     & centre (not center) \\
+-our:    & colour (not color) \\ 
+-gue:    & catalogue (not catalog, but analog is used in electronics) \\ 
+-mme:    & programme (not program, unless referring to a computer
+           program) \\ 
+-ell-:   & labelled (not labeled) \\ 
+-ce/-se: & licence (noun), license (verb), practice (noun), practise (verb) \\ 
+-ize:    & organization, authorize. \\
+         & Exceptions to this rule include advise, comprise, compromise, 
+           concise, demise, devise, enterprise, exercise, improvise, 
+           incise, precise, revise, supervise, surmise, surprise, televise.\\
+\end{tabularx}
+\end{flushleft}
+
+\subsection{Punctuation}
+
+\subsubsection{Hyphen}
+
+Hyphens are used to avoid ambiguity, \ie in attributive compound
+adjectives (compare `a little used car' and `a little-used car'), to
+distinguish between words such as `reform' (change for the better) and
+`re-form' (form again), and to separate double letters to aid
+comprehension and pronunciation (\eg co-operate).
+
+Hyphens are also used if a prefix or suffix is added to a proper noun,
+symbol, or numeral, and in fractions: \eg non-Fermi, 12-fold,
+three-quarters.
+
+\subsubsection{En dash}
+
+En dashes are used to mean `and' (\eg space--time, Sourian--Lagrange)
+or `to' (\eg 2003--2004, input--output ratio).
+
+\subsubsection{Em dash}
+
+An em dash is used as a parenthetical pause. Simply type with no space
+on either side (\emph{Word} will automatically insert a thin space),
+\eg `the experiment\,---\,due to begin in 2007\,---\,represents a
+major advance...'. In \LaTeX{} you can use \texttt{{-}{-}} and
+\texttt{{-}{-}{-}} for entering an en dash, and an em dash,
+respectively.
+
+\subsubsection{Quotation marks}
+
+Double for true quotations, single for anything else. Single within
+double for a quotation within a quotation. Our preferred method of
+punctuation around quotation marks is to place punctuation marks
+outside the quotation marks, to avoid any ambiguity: Oxford has been
+called a `Home of lost causes'.
+
+
+\subsubsection{Apostrophe}
+
+Do not use in plural acronyms (\eg JFETs), decades (1990s).  Do use
+in plural Greek letters and symbols (\eg $\pi$'s).
+
+\subsubsection{Colon, semi-colon, exclamation mark, question mark}
+
+Please note that in English these punctuation marks do not require a
+space before them.
+
+\subsection{Lists}
+
+In a series of three or more terms, use a comma (sometimes called the
+serial comma) before the final `and' or `or' (\eg gold, silver, or
+copper coating). In a run-on list, do not introduce a punctuation mark
+between the main verb and the rest of the sentence.  Avoid the use of
+bullet points.
+
+For a displayed list there are two options:
+
+\begin{itemize}
+\item[i)]  finish the introductory sentence with a colon, start the
+           first item of the list with a lower-case letter, finish it
+           with a semi-colon, and do the same for all items until the
+           last, where a full stop is placed at the end of the text
+           (as here);
+\item[ii)] finish the introductory sentence with a full stop, start
+           the first item with a capital letter and finish it with a
+           full stop, and the same for the remaining items.
+\end{itemize}
+
+\subsection{Capitalization}
+
+Capitalize adjectives and nouns formed from proper names,
+\eg Gaussian.  Exceptions to this rule include units of measure
+(amperes), particles (fermion), elements (einsteinium), and minerals
+(fosterite) derived from names.  Capitalize only the name in
+Avogadro's number, Debye temperature, Ohm's law, Bohr radius.
+
+Never capitalize lower-case symbols or abbreviations. When referring
+to article, paper, or report, column, sample, counter, curve, or type,
+do not capitalize.
+
+Do capitalize Theorem I, Lemma 2, Corollary 3, \etc
+
+\subsubsection{Acronyms}
+
+In the first instance, spell out the acronym using capital letters for
+each letter used in the acronym, and provide the acronym in
+parentheses, \eg Quark--Gluon Plasma (QGP).
+
+\subsection{Numbers}
+
+Spell out numbers 1 to 9 unless they are followed by a unit or are
+part of a series containing the number 10 or higher (as here); numbers
+are always in roman type. Numbers should always be written out at the
+beginning of a sentence.
+
+\subsection{Symbols}
+
+Names of particles, chemicals, waves or states, covariant couplings
+and monopoles, and mathematical abbreviations are written in roman
+type.
+
+Symbols of variables (\ie anything that can be replaced by a number)
+should be typed in \emph{italics}.
+
+Take care that this is consistent throughout the contribution.
+
+\subsection{Units}
+
+Symbols for units are printed in roman type. Symbols for units derived
+from proper names are written with capital letters (\eg coulomb, 6~C).
+Write the unit out in full in cases such as `a few centimetres'.  When
+using symbols insert a \emph{non-breaking space} between the number
+and the unit, unless it is $\%$ or superscript, \eg \verb!10~cm!,
+\verb!100~GeV!, \verb!15~nb!, but \verb!20\%!, \verb!27$^\circ$C!. To
+help you typeset units correctly, \Tref{tab:predef} shows a set of
+predefined commands that are defined in the CERN \LaTeX{} class files.
+For instance, the examples above could have been entered
+\verb!\Unit{10}{cm}!, \verb!100\UGeV!, \etc, where these commands work
+both in text or math mode. These \verb!\U...! commands typeset a
+non-breaking space preceding the unit.  Each of these commands have a
+partner ending in `\texttt{Z}', which omits this space, \eg
+\verb!100~\UGeVZ!. These variants can be useful when combining several
+units.
+
+Please see the file on symbols and units, available from the DTP Web
+pages, for a list of abbreviations for the most commonly used
+units\footnote{NIST also has a useful summary on the subject, see
+\url{http://physics.nist.gov/cuu/Units/.}}.
+
+\newpage
+\appendix
+
+\section{The \texttt{cernrep} class file}
+
+The Web page at the URL \url{http://cern.ch/DTP/dtpcernreport.htm}
+contains a class file (\texttt{cernrep.cls}) that authors should
+download to prepare their contribution. There is also an example file
+(\texttt{cernrepexa.tex}), which can be used as a model. The \LaTeX{}
+source of the present document (\texttt{cernrep.tex}), as well as its
+typeset result (\texttt{cernrep.pdf}) are available as well.
+
+\subsection{Predefined commands}
+
+The CERN \LaTeX{} class files have predefined commands for
+often-occurring abbreviations of markup entities. \Tref{tab:predef}
+gives a list. The unit commands provide the non-breaking space between
+the value and the unit's name.
+
+\begin{table}[h]
+\caption{Examples of predefined commands in the CERN \LaTeX{} classes}
+\label{tab:predef}
+\centering\small
+\begin{tabular}{@{}>{\ttfamily}ll@{}}
+\hline\hline
+\textrm{\emph{Commands available in text mode}} & 
+  \emph{Result as printed}\\\hline
+\verb|text \eg more text| & text \eg more text \\
+text \Lcs{etc}, more text & text \etc, more text \\
+text \Lcs{ie} more text & text \ie more text \\\hline
+\textrm{\emph{Commands for cross-referencing (text mode)}}
+                                       & \emph{Result as printed}\\\hline
+\verb|\Eq[b]~(\ref{eq:einstein}) and \Eref{eq:euler}| & 
+      Equation~(1) and Eq.~(2) \\
+\verb|\Figure[b]~\ref{fig:cern} and \Fref{fig:fermi}| & 
+      Figure~3 and Fig.~4       \\
+\verb|\Bref[b]{bib:top} and \Refs~\cite{bib:ref1,bib:ref2}| & 
+      Reference~[3] and Refs~[6--7]    \\
+\verb|\Sref{sec:intro} and \Sections~\ref{sec:sun}--\ref{sec:moon}| &
+      Section 1 and Sections 3.4--3.6\\
+\verb|\Tref{tab:sym} and \Tables~\ref{tab:top}--\ref{tab:charm}| & 
+      Table 4 and Tables 5--6 \\\hline
+\textrm{\emph{Commands available in math and text mode}}
+                                       & \emph{Result as printed}\\\hline
+\multicolumn{2}{@{}l}{\emph{Units}}\\
+\verb!\Unit{3}{Tm} and $\Unit{3}{Tm}$! & \Unit{3}{Tm} and $\Unit{3}{Tm}$  \\
+\verb!\Unit{1}{PeV} and $\Unit{1}{PeV}$! 
+    & \Unit{1}{PeV} and $\Unit{1}{PeV}$\\
+\verb|3\UeV{} and $3\UeV$|           & 3\UeV{} and $3\UeV$ \\
+\verb|3\UkeV{} and $3\UkeV$|         & 3\UkeV{} and $3\UkeV$ \\
+\verb|3\UMeV{} and $3\UMeV$|         & 3\UMeV{} and $3\UMeV$ \\
+\verb|3\UGeV{} and $3\UGeV$|         & 3\UGeV{} and $3\UGeV$ \\
+\verb|3\UTeV{} and $3\UTeV$|         & 3\UTeV{} and $3\UTeV$ \\
+\verb|3\UPeV{} and $3\UPeV$|         & 3\UPeV{} and $3\UPeV$ \\
+\verb|3\UGeVcc{} and $3\UGeVcc$|     & 3\UGeVcc{} and $3\UGeVcc$ \\
+\hline\hline
+\end{tabular}
+\end{table}
+
+\subsection{Obtaining the class file and making your contribution available}
+
+The \texttt{cernrep} class file loads a number of external packages,
+as well as some CERN-specific extensions. You need a recent \LaTeX{}
+setup (such as \TeX{}live 2004, see the TUG Web site
+\url{http://www.tug.org} for details) to fully exploit its
+possibilities. 
+
+In the CERN Linux environment these CERN-specific classes become
+available if you include the latest \texttt{texlive} in your
+\texttt{PATH} (see
+\url{http://xml.cern.ch/textproc/texliveunixcern.html}).  For the
+convenience of off-site users a {\small ZIP} file \texttt{cernrep.zip}
+contains a set of files to supplement their (recent) setup.
+
+Please contact the editors to determine the best way to submit your
+contribution.  Please submit the \LaTeX{} file and separate files for
+each of the figures and the bibliography if using \verb|bibtex| to
+generate the list of references.  Figures or photographs that are not
+available in electronic form should be sent to the editors by post.
+
+\newpage
+\section{Things to do and not do when preparing your \LaTeX{}
+  contribution}
+\label{app:donotdo}
+
+Authors accumulate over time a certain experience and habits for
+preparing their scientific documents electronically using their
+preferred text editor and document processing system. When submitting
+a \LaTeX{} source file to an editor for publication, it is very
+important that the source of the contribution be readable and
+understandable to the various people who have to intervene in the
+production process.
+
+\subsection{Make your source easy to read and maintain}
+
+In order to make life easier for yourself as well as for the
+professionals who will have to deal with your source file, we invite
+authors to take into account the following general suggestions.
+\begin{itemize}
+\item Use, as far as possible, only basic \LaTeX{} commands, including
+  those of the packages that are loaded by the
+  \texttt{cernrep.cls}. In particular, for graphics inclusion, use the
+  \Lcs{includegraphics} command rather than its deprecated precursors
+  (\Lcs{epsffile}, \Lcs{epsfig}, \etc). For math expressions, see
+  \Sref{app:amsmath}.
+
+\item Do not use \TeX{} commands, but their \LaTeX{} equivalents. In
+  particular, \Lcs{def} should never be used to (re)define commands,
+  since there exists \Lcs{newcommand}, or \Lcs{providecommand}, which
+  will issue an error message if the command name is already in use.
+  Basic \LaTeX{} commands or environment should \textbf{never} be
+  redefined. 
+
+\item Do not use \texttt{\$\$} for delimiting a display math formula,
+  but use the \LaTeX{} construct \Lcs{[} \dots \Lcs{]}, instead. More
+  generally, numbered equations can be produced with the
+  \texttt{equation} environment, with \texttt{equation*} its
+  unnumbered variant.
+
+\item Do not use one-letter (or even two-letter) lower-case commands as
+  command definitions, since \TeX{}, \LaTeX{}, or some extension
+  packages define these already. Indeed, many hours have been lost, to
+  understand that the redefinition of, for instance, \Lcs{r} on one of
+  the several thousands of lines of a \LaTeX{} source of an author
+  upset the typesetting several pages downstream. In general, it is
+  good practice to define new commands starting with an upper-case
+  letter and giving it a name with a mnemonic meaning, \ie one which
+  is three or more characters long.
+
+\item Do not replace \LaTeX{} environments by commands, \eg \Lcs{be},
+  \Lcs{ee}, and \Lcs{bee} and \Lcs{eee} for delimiting the
+  \Lenv{equation} and \Lenv{eqnarray} environments, \Lcs{bi},
+  \Lcs{ei}, to delimit the \Lenv{itemize} environment, \etc Saving a
+  few keystrokes can be no excuse for obfuscating the source
+  unnecessarily, thus making it more difficult to understand and
+  maintain.  Authors spend, in general, many weeks, preparing an
+  article or a report. Hence it is certainly worth while to use, as far
+  as possible, standard \LaTeX{} commands, and to define new ones only
+  to make the source \emph{easier} to read and re-use.
+
+\item Do not use \TeX's state changing font commands \verb!{\rm ...}!,
+  \verb!{\it ...}!, \verb!{\bf ...}!, \etc, but use the \LaTeX{}
+  equivalents: in text mode \verb!\textrm{...}!, \verb!\emph{...}!,
+  \verb!\textbf{...}!, and inside math mode, \verb!\mathrm{...}!,
+  \verb!\mathit{...}!, \verb!\mathbf{...}!, \etc
+
+\item Do not reference equations, sectioning commands, figures, or
+  tables by explicit, hard-coded numbers in your source, but use
+  \LaTeX's cross-reference mechanism, using a mnemonic key to identify
+  each structural element clearly (see \Sref{sec:crossref}).
+
+\item Do not redefine \LaTeX's basic counters, such as
+  \texttt{equation}, \texttt{section}, \etc Numbering of such
+  elements is defined by the \texttt{cernrep} class file and should 
+  not be modified by the authors, who should use only \LaTeX{}'s
+  cross-reference mechanism to refer to equations, figures, tables,
+  \etc (see \Sref{sec:crossref}).
+
+\end{itemize}
+
+\subsection{The \texttt{amsmath} extensions}
+\label{app:amsmath}
+
+Recent developments around \LaTeX{}, often sponsored and driven by
+scientific publishers, have ensured that structural elements and math
+constructs in particular are easily delimited and their sense made
+clear. The American Mathematical Society have done a great job with
+their \texttt{amsmath} extension, which is loaded by default in the
+\texttt{cernrep.cls} class. Therefore, we would like our authors to
+use the conventions and \LaTeX{} constructs of that package, rather
+than the pure \TeX{} primitives. This is all the more important as we
+want to take full advantage of the possibilities of hypertext and the
+Web, where \TeX{} primitives, because they are not clearly delimited,
+are much more difficult to handle (see previous paragraph).
+
+Below we give a few often-occurring mathematics constructs, first in
+their \TeX{} form (to be avoided), their \LaTeX{} equivalent (to be
+preferred), and the typeset result.
+
+\begin{itemize}
+\item \Lcs{over} to be replaced by \Lcs{frac}.
+\begin{description}
+\item[\TeX{}] \verb!${Z^\nu_{i}\over 2 \Lambda_{\rm ext}}$!
+\item[\LaTeX] \verb!$\frac{Z^\nu_{i}}{2 \Lambda_{\text{ext}}}$!
+\item[Result] $\displaystyle\frac{Z^\nu_{i}}{2 \Lambda_{\text{ext}}}$
+\end{description}
+\item \Lcs{choose} to be replaced by \Lcs{binom}.
+\begin{description}
+\item[\TeX{}] \verb!${m + k \ choose k}$!
+\item[\LaTeX] \verb!$\binom{m + k}{k}$!
+\item[Result] $\binom{m + k}{k}$
+\end{description}
+\item \Lcs{matrix} family to be replaced by corresponding environments.
+\begin{description}
+\item[\TeX{}] \verb!$\matrix{a & b \cr c & d\cr}$!
+\item[\LaTeX] \verb!$\begin{matrix}a & b\\c & d\end{matrix}$!
+\item[Result] $\begin{matrix}a & b\\c & d\end{matrix}$
+\item[\TeX{}] \verb!$\pmatrix{a & b \cr c & d\cr}$!
+\item[\LaTeX] \verb!$\begin{pmatrix}a & b\\c & d\end{pmatrix}$!
+\item[Result] $\begin{pmatrix}a & b\\c & d\end{pmatrix}$
+\item[\TeX{}] \verb!$\bmatrix{a & b \cr c & d\cr}$!
+\item[\LaTeX] \verb!$\begin{bmatrix}a & b\\c & d\end{bmatrix}$!
+\item[Result] $\begin{bmatrix}a & b\\c & d\end{bmatrix}$
+\end{description}
+\item Cases construct: use the \texttt{cases} environment.
+\begin{description}
+\item[\LaTeX{} without \texttt{amsmath}] 
+\begin{minipage}[t]{.7\linewidth}
+\begin{verbatim}
+$$
+{\rm curvature~} R = {6K\over a^2(t)} \quad
+\left\{\begin{array}{ll}
+K=-1\quad&{\rm open}\\
+K=0      &{\rm flat}\\
+K=+1     &{\rm closed}
+\end{array}\right.
+$$
+\end{verbatim}
+\end{minipage}
+\item[\LaTeX{} with \texttt{amsmath}]
+\begin{minipage}[t]{.7\linewidth}
+\begin{verbatim}
+\[
+\text{curvature } R = \frac{6K}{a^2(t)} \quad
+\begin{cases}
+K=-1\quad&\text{open}\\
+K=0      &\text{flat}\\
+K=+1     &\text{closed}
+\end{cases}
+\]
+\end{verbatim}
+\end{minipage}
+\item[Result] 
+\begin{minipage}[t]{.7\linewidth}
+\[
+\text{curvature } R = \frac{6K}{a^2(t)} \quad
+\begin{cases}
+K=-1\quad&\text{open}\\
+K=0      &\text{flat}\\
+K=+1     &\text{closed}
+\end{cases}
+\]
+\end{minipage}
+\end{description}
+\item \texttt{amsmath} offers symbols for multiple integrals.
+\begin{description}
+\item[\TeX{}] \verb/$\int\!\!\int\!\!\int {\rm div}~\vec{\rm E}\,{\rm d}V/\\
+              \verb/ = \int\!\!\int\vec{\rm E}\,{\rm d}\vec{\rm S}$/
+\item[\LaTeX{}] \verb/$\iiint \text{div}~\vec{\mathrm{E}}\,\mathrm{d}V/\\
+              \verb/ = \iint\vec{\mathrm{E}}\,\mathrm{d}\vec{\mathrm{S}}$/
+\item[Result] $\iiint \text{div}~\vec{\mathrm{E}}\,\mathrm{d}V
+               = \iint\vec{\mathrm{E}}\,\mathrm{d}\vec{\mathrm{S}}$
+\end{description}
+\end{itemize}
+
+The \texttt{cernrep} class loads, amongst others, the \texttt{amsmath}
+and the \texttt{amssymb} packages. The latter package defines many
+supplementary commands and symbols that with \TeX{} would have to be
+constructed from more basic components. See \Refs~\cite{bib:voss2005}
+and \cite{bib:pakin2003}, or Chapter~8 of~\Bref{bib:mittelbach2004}
+for more details.
+
+\begin{thebibliography}{99}
+\bibitem{bib:voss2005} Herbert Vo{\ss},
+  \emph{Math mode}, available at the URL
+\url{http://www.tex.ac.uk/tex-archive/info/math/voss/mathmode/Mathmode.pdf}.
+
+\bibitem{bib:mittelbach2004} Frank Mittelbach and Michel Goossens,
+  \emph{The \LaTeX{} Companion}, 2nd ed. (Addison-Wesley, Boston,
+  2004).
+\bibitem{bib:pakin2003} Scatt Pakin,
+  \emph{The Comprehensive \LaTeX{} Symbol List}, available at the URL
+\url{http://www.ctan.org/tex-archive/info/symbols/comprehensive/symbols-a4.pdf}.
+\end{thebibliography}
+\end{document}

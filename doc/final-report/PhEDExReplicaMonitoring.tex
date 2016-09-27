@@ -501,146 +501,341 @@ userdict /end-hook known{end-hook}if
 \end{filecontents*}
 \documentclass{cernrep}
 \begin{document}
-\title{Title of contribution}
-\author{A.N. Author and A.N. Other\thanks
-                 {On leave from another institue somewhere.}}
-\institute{Institute name in English, Town, Country}
+\title{PhEDEx Dataset Replica Monitoring}
+\author{A.Repecka}
+\institute{Vilnius University, Vilnius, Lithuania}
 \maketitle
 
 \begin{abstract}
-Each paper should be preceded by a short abstract of not more 
-than 150~words, which should be written as a single paragraph 
-and should not contain references.
+This report suggests an apporoach for analysing CMS dataset block replica storage information. It contains of four main segments: reading data, 
+processing data, writing and visualizing results. Most of the decisions made in the approach were chosen in order to get high configurability and 
+good performance. Created service takes advantage of Hadoop, Spark, Elasticsearch and Kibana technologies.
 \end{abstract}
 
-\section{Section heading}
+\section{Introduction}
 
-A section title is styled as above, and first paragraphs after
-headings are not indented. References appear in numerical
-order~\cite{Raby1966,Dupont1961}. An itemized list looks like the following:
+In CMS data are recorded in files, files are grouped into datasets based on physics. Datasets are then divided in specific size blocks.
+The CMS data management system distributes the data to tens of sites and tracks in its Oracle database the location of every replica of 
+every block produced by CMS. Since the PhEDEx database only contains the current status of the block replicas, to preserve historical 
+evolution of space occupation daily snapshots are exported to HDFS. The main idea of this project is to extend PhEDEx monitoring with a 
+system to generate statistics about the storage space occupied by different types of datasets at different sites.
+
+\section{Input data}
+
+Input data for the created service is stored in hadoop file system and is formatted in csv files. Each snapshot of data have a size ranging 
+from 2 to 3.5GB. The schema of data includes these fields:
+\textit{now, dataset{\_}name, dataset{\_}id, dataset{\_}is{\_}open, dataset{\_}time{\_}create, dataset{\_}time{\_}update, block{\_}name, block{\_}id, 
+block{\_}files, block{\_}bytes, block{\_}is{\_}open, block{\_}time{\_}create, block{\_}time{\_}update, node{\_}name, node{\_}id, br{\_}is{\_}active, 
+br{\_}src{\_}files, br{\_}src{\_}bytes, br{\_}dest{\_}files, br{\_}dest{\_}bytes, br{\_}node{\_}files, br{\_}node{\_}bytes, br{\_}xfer{\_}files, br{\_}xfer{\_}bytes, 
+br{\_}is{\_}custodial, br{\_}user{\_}group, replica{\_}time{\_}create, replica{\_}time{\_}update}. More information about the snapshots can be found 
+in the CERN resource\footnote{http://awg-virtual.cern.ch/data-sources-index/projects/\#phedex-blk-replicas-snapshot}.
+
+\section{Processing}
+
+The next step was to porcess data. As data was exported to hadoop file system and it was exported in huge amounts, it was decided to use spark 
+to process the data in distributed manner using executors memory instead of disk. In order to get even more efficient service dataframes and 
+sparkSQL were used.
+
+\subsection{Reading input}
+
+Before processing data it is needed to load it from hadoop file system. Service provides few options for this task. First of all, specific hadoop directory name 
+can be specified (\textit{--fname hdfs:///project/awg/cms/ph edex/block-replicas-snapshots/csv/time=2016-07-09{\_}03h07m28s}). It is worth mentioning 
+that specified directory cannot contain inner directories. It should only consist of one or more partitioned files. In order to read many directories 
+at once service provides different solution. User can specify base directory - the place where one or more hadoop directories are held (
+\textit{--basedir hdfs:///project/awg/cms/phedex/block-replicas-snapshots/csv/}). With this parameter it is a must to define date range (
+\textit{--fromdate 2015-08-04, --todate 2015-08-09}). As example imposes hadoop directory must contain directories with date in its name. Date is expected 
+to be written in YYYY-MM-DD manner. Different date formats are not supported. If date parameters are not specified default value of current day is used. 
+In order to make reading efficient third party package for reading CSV files was used (\textit{spark-csv}). Detailed implementation of reading input can be found in 
+github repository\footnote{https://github.com/aurimasrep/PhedexReplicaMonitoring/blob/master/src/python/ReplicaMonitoring/pbr.py\#L162}.
+
+\subsection{Additional data parsing}
+
+To get more sophisticated data analysis it was decided to extract additional data from given fields. For that reason python regular expressions were used.
 \begin{itemize}
-\item the first item,
-\item the second item.
+\item Dataset name - /A/B-C-...-X-Y/Z
+\begin{itemize}
+\item Acquisition era (B). Element between second slash and the first following dash.
+\item Campaign (B-C-...-X). Every element in the middle section except processing era (Y).
+\item Data Tier (Z). The last segment of dataset name (after third slash). 
+\end{itemize}
+\item Node name.
+\begin{itemize}
+\item Node tier. It is simply first two symbols of node name (ex.: T0, T1 ...).
+\end{itemize}
+\item Now (now{\_}sec).
+\begin{itemize}
+\item Now. As records in one snapshot contain different timestamps(but the same date), date extraction was implemented. It allowed proper grouping by now field.
+\end{itemize}
+\end{itemize}
+Snapshots does not provide all the necessary data for block replicas analysis. For that reason two extra csv files were stored inside project data directory. 
+This solution was chosen because the files are relatively small and not likely to be changing. One of them (~/data/phedex{\_}groups.csv) is needed to get user 
+group name from id. Second (phedex{\_}node{\_}kinds.csv) is needed to get node kind from node id.
+
+\subsection{Dynamic management}
+
+In order to analyse and visualize data properly it was decided that service should provide dynamic aggregations. For efficiency reasons dataframes and sparkSQL 
+were used in Spark Jobs.
+
+\subsubsection{Grouping keys}
+
+User can specify one or more fields as grouping keys. Keys are expected to be written in csv manner. If not - user gets an error. If parameter is not set - 
+default value is set (dataset{\_}name, node{\_}name). Possible values for keys:
+\textit{now{\_}sec, now, dataset{\_}name, block{\_}name, node{\_}name, br{\_}is{\_}custiodial, br{\_}user{\_}group, data{\_}tier, acquisition{\_}era, node{\_}kind, 
+node{\_}tier, campaign}
+
+\subsubsection{Result values}
+
+Results are used for specifying result fields for group operation. Results are expected to be written in csv manner. If not - user gets an error. If parameter is 
+not set - default value is set (block{\_}files, block{\_}bytes). Possible values for results:
+\textit{block{\_}files, block{\_}bytes, br{\_}src{\_}files, br{\_}src{\_}bytes, br{\_}dest{\_}files, br{\_}dest{\_}bytes, br{\_}node{\_}files, br{\_}node{\_}bytes, 
+br{\_}xfer{\_}files, br{\_}xfer{\_}bytes}
+
+\subsubsection{Aggregations}
+
+Aggregation functions are defined for each result field. If the same aggregation function should be used fo all results columns then it is enough to specify one 
+aggregation function and service automatically apply aggregation for all fields. If user wants to specify different aggregation functions for different columns 
+then aggregations is expected to be written in csv manner and in the exact order as results were specified. If parameter is not set - default value is set (sum) 
+for all results elements. Possible values for aggregations:
+\textit{sum, count, min, max, first, last, mean, avg-day, delta}.
+
+\subsubsubsection{Day avarage}
+
+All aggregaions is self explanatory except last two (avg-day, delta). Avg-day function simply sums result fields and divides it by distinct number of dates in 
+given data range.
+
+\subsubsubsection{Delta}
+
+Developed delta function for calculating block transfers between different time intervals. The operation is not dynamic. It has fixed group keys: node{\_}name, 
+date. User can only specify one result field (most often it will be br{\_}node{\_}bytes) and interval in days (--interval 1). The basic algorithm:
+\begin{enumerate}
+\item For all dates in the given period generate interval group.
+\item Group data by block, node, interval and retrieve the newest result value in the interval. If newest value in the interval does not match the end in the interval 
+- newest result value 0.
+\item Generate records for blocks that disappeared from node (in csv there is no row because block is missing but the period has minus delta).
+\item Join existing and generated records.
+\item Calculate deltas between intervals.
+\item Divide delta{\_}plus and delta{\_}minus columns and aggregate by date and node.
+\end{enumerate}
+Algorithm was implemented having data shuffled through the network as litlle as possible. Shuffling large amounts of data results in performance issues. Detailed 
+information about delta aggregation with code examples\footnote{https://github.com/aurimasrep/PhedexReplicaMonitoring/blob/master/doc/reports/Week{\_}5.md} and the 
+mplementation itself\footnote{https://github.com/aurimasrep/PhedexReplicaMonitoring/blob/master/src/python/ReplicaMonitoring/pbr.py\#L462} can be found on github repository.
+
+\subsection{Data ordering}
+
+For better data analysis data ordering was implemented. The process use two main arguments (order, asc):
+\begin{itemize}
+\item Parameter order is expected to be written in csv manner and should contain fields only from keys and results parameters. If not - user gets an error. This 
+parameter goes along with parameter asc.
+\item Parameter asc is expected to be written in csv manner and should contain only 1,0 (1 - ascending, 0 -descending). Symbols 1,0 should appear in the exact same 
+order as columns in order parameter. This parameter goes along with parameter ord. If parameter is not set - all columns will be sorted ascending.
 \end{itemize}
 
-You can also have an enumerated list:
+\subsection{Data filtering}
 
-\begin{enumerate}
-\item the first item,
-\item the second item.
-\end{enumerate}
+For better data analysis data filtering was implemented. The process uses one argument "filt". It has a form of \textit{field:regex}. Parameter is expected to be written 
+in CSV manner. Field section of parameter can contain any field from data schema. The second part of parameter can contain regular expressions. This was implemented 
+due to a need to remove unnecesary data from aggregation process (\textit{--filt acquisition{\_}era:Run2012.*,data{\_}tier:RAW}).
 
-\subsection{Subsection heading}
+\subsection{Additional features}
 
-As you see, the first paragraph is not indented. References when part
-      of the text use the term `Ref.', for example, see
-      Ref.~\cite{Raby1966} and
-      Refs.~\cite{Appleman1959,vanBerg1965,Bryant1985,Allen1977}.
+This service is expected to be used with variuos aggregations. For that reason it was decided that service should provide a possibility to write header of columns for 
+each partitioned hadoop file. This can be done by using \textit{header} parameter. Also, as for personal usage script produces too many logs, so logs level choice was 
+implemented. User can define \textit{logs} parameter with one of available options: 
+\textit{ALL, DEBUG, ERROR, FATAL, INFO, OFF, TRACE, WARN}. Parameter is not case sensitive. Also, service provides a possibility to be run in local or yarn mode (parameter 
+\textit{--yarn}).
 
-Subsequent paragraphs are indented. See Table~\ref{tab:LET} for an
-example of how to display a table.
+\section{Output}
+
+The service provides few possibilities to store results. Every of them has to be used for specific purposes.
+
+\subsection{Hadoop file system}
+
+The service provides a possibility to write data back to hadoop file system at specific path (\textit{--fout hdfs:///user /arepecka/ReplicaMonitoring}). User cannot 
+control number of partitions it is going to get. It depends on input file (how many partiions it has) and the aggregation type. This kind of output should be used 
+for data that should be stored long-term.
+
+\subsection{Local file system}
+
+The service also lets user to get data to local file system. As this action requires data collection to master node it should be used with caution. It might fill all 
+available memory on master node. As this depends on the aggregation result size it cannot be controlled programatically (different aggregations produces different size 
+results). User is responsible for having enough space on executing environment. User should use the same \textit{fout} parameter with the extra parameter \textit{collect} 
+specified. For convenience purposes data is written in JSON format. This option should be used only with basic aggregations and small files.
+
+\subsection{Elasticsearch resource}
+
+Service also provides a possibility to output results into elasticsearch data resource (parameter \textit{es}). This should be done with data that needs to be visualized. As elasticsearch 
+resource might be changing configuration file (\textit{~/etc/pbr.cfg}) was specified. The file must have section called "ElasticSearch" and elements: node, port, 
+resource (index/type). Service writes data to elasticsearch using "org.elasticsearch.spark.sql" package which is used with the mode "append". For efficiency reasons 
+data is repartitioned before. As service can be used in both: cronjob or custom mode it was decided that is important to distinct this data. It is also important for 
+kibana visualization not to get duplicate results. To solve this problem new field (\textit{origin}) was added to data schema. When running as a cronjob it should have 
+value of "cronjob". In any other use cases user should provide his own value (\textit{--esorigin run2}). Failing to do that service would write "custom" value to origin field.
+Field origin is only written to elasticsearch data resource (results in hdfs and local fs are not affected).
+
+\subsubsection{Hadoop-elasticsearch connection}
+
+When implementing this service it was decided that elasticsearch/kibana should be considered as detached sub-system. Elasticsearch might not be available all the time or users 
+might want to export already aggregated data from hdfs to elasticsearch. It showed a need to have direct hdfs-elasticsearch connection. For this reason another 
+service\footnote{https://github.com/aurimasrep/HdfsES} was created. It was also built on top of spark making it possible to use advantages of distributed computing. Service 
+allows user choose one ( parameter \textit{fname}) or more (parameters \textit{basedir, fromdate, todate}) directories in hadoop file system. It also reads user defined 
+data schema (specified in environment variable \textit{HDFSES{\_}SCHEMA}). Schema should be defined it json format and with the structure defined in 
+example\footnote{https://github.com/aurimasrep/HdfsES/blob/master/data/schema.json}. As mentioned earlier elasticsearch resource should have a configuration file with section 
+"ElasticSearch" and elements: node, port and resource (index/type). It should be provided in environment variable \textit{HDFSES{\_}CONFIG}. Moreover, it provides a 
+possibility to define origin of data (parameter \textit{esorigin}). Service results in having data exported to specified elasticsearch resource.
+
+\section{Performance}
+
+Having good performance on data processing was one of the most important goals of this project. Using different measures to achieve this goal allowed service to reduce 
+processing time to a minimum. Measures include:
+\begin{itemize}
+\item Using sparkSQL instead of map/reduce
+\item Using dataframes instead of rdds
+\item Avoiding automatic data schema interference
+\item Using third party packages
+\item Using spark udfs
+\item Creating aggregation algorithms which minimize data shuffling through the network
+\end{itemize}
+As different aggregations have different performance results we provide two performance figures on different aggregations. It is worth mentioning that both aggregations 
+was processed in yarn mode. Given resources are written in the performance table.
+\begin{itemize}
+\item Group keys: node, user group, acquisition era, data tier, node kind
+\item Result fields: node bytes, destination bytes
+\item Aggregations: sum, sum
+\item Output: hadoop file system
+\end{itemize}
 
 \begin{table}[h]
 \begin{center}
-\caption{A simple table}
+\caption{Performance of basic aggregations}
 \label{tab:LET}
-\begin{tabular}{p{6cm}cc}
-\hline\hline
-\textbf{Heading}             & \textbf{Result 1}
-                                                & \textbf{Result 2}\\
+\begin{tabular}{l*{6}{c}r}
 \hline
-200 kVp X-rays total$^{a}$   & 3.25             & 1.79 \\
-200 kVp X-rays (primary)     & 2.60             & 1.48 \\
-\hline\hline
-\multicolumn{3}{l}{$^{a}$ \footnotesize Notes in tables appear as
-                      this one here.}
+\textbf{Interval}  & \textbf{Input}  & \textbf{Cores} & \textbf{Memory} & \textbf{Output} & \textbf{Duration} \\
+\hline
+1 day              & ~3GB            & 65             & 361472MB        & ~600KB          & ~1.6min \\
+1 month            & ~100GB          & 65             & 361472MB        & ~18MB           & ~4.3min \\
+3 months           & ~310GB          & 65             & 361472MB        & ~52MB  	  & ~9.7min \\
+1 year             & ~1.1TB          & 65             & 361472MB        & ~186MB          & ~28min \\
+\hline
 \end{tabular}
 \end{center}
 \end{table}
 
-\subsubsection{Subsubsection title}
-\label{sec:sss}
+\begin{itemize}
+\item Result fields: node bytes
+\item Aggregations: delta
+\item Interval: 1
+\item Output: hadoop file system
+\end{itemize}
 
-Equation~(\ref{eq:a1}) is presented correctly:
-\begin{equation}
-n^k(h)= k h \frac{k}{32}~. \label{eq:a1}  
-\end{equation}
+\begin{table}[h]
+\begin{center}
+\caption{Performance of delta aggregations}
+\label{tab:LET}
+\begin{tabular}{l*{6}{c}r}
+\hline
+\textbf{Interval}  & \textbf{Input}  & \textbf{Cores} & \textbf{Memory} & \textbf{Output} & \textbf{Duration} \\
+\hline
+2 days             & ~5GB            & 65             & 361472MB        & ~12.7KB         & ~2.5min \\
+7 days             & ~20GB           & 65             & 361472MB        & ~41.6KB         & ~4min \\
+1 month            & ~90GB           & 65             & 361472MB        & ~189.2KB  	  & ~8.5min \\
+6 months           & ~500GB          & 65             & 361472MB        & ~1MB            & ~35min \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+Delta operation is more commputationally expensive, so for year's data processing it is a must to have more recources (either more executors or more dedicated RAM). 
+Given resources is not enough for delta operation to process 1.1TB of data. When executors do not have enough memory Spark causes spills to the disk and it produces an 
+error as user does not have enough disk qouta. 
 
-This is how all equations should be formatted,
-including~Eqs.~(2)--(10), 
-%% With LaTeX use: Eqs,~(\ref{eq:a2})--(\ref{eq:a10}) syntax.
-which are not shown\footnote{Footnotes are
-to be used only when absolutely necessary.}.
+\section{Visualization}
 
-\subsubsubsection{Subsubsubsection title}
+When we have data in elasticsearch resource visualization becomes a formality. First of all, user should configure kibana to point to elasticsearch resource that was used in results 
+storage. Moving forward, index shhould be configured properly (Ex.: now should have time format of YYYY-MM-DD; node, destination bytes should have SI formating, etc...). Then searches, 
+visaulizations and dashboards are created. Example kibana objects are stored in github 
+repository\footnote{https://github.com/aurimasrep/PhedexReplicaMonitoring/blob/master/data/kibana{\_}objects.json}. For clearing out the purposes that service might be used for two examples 
+were given.
 
-Figure~\ref{tab:LET} is an example of how to display figures. Please
-refer to figures as Figs.~2--4, etc.
-%% With LaTeX use : Figs.~\ref{fig:a1}--\ref{fig:a4} syntax.
-Section~\ref{sec:sss} is a cross-reference to a section. 
-See the document describing the CERN reports~\cite{cernrep} for more
-details on how to present figures, tables, equations, and much more
-with \LaTeX. 
+\subsection{Current data analysis}
 
+\begin{enumerate}
+\item Define search that filters records which have an origin of cronjob and node kind of disk
+\item Define search that filters records which have an origin of cronjob and node kind of mss
+\item For each search create pie charts:
+\begin{itemize}
+\item Define aggregation as sum of node bytes
+\item Split charts by top 5 storage consuming user groups
+\item Split slices by;
+\begin{itemize}
+\item Top 20 storage consuming acquisition eras
+\item Top 20 storage consuming data tiers
+\end{itemize}
+\end{itemize}
+\item Combine all 4 visualizations in one dashboard and save it with time "yesterday"
+\end{enumerate}
+Capture of the dashboard can be seen in \ref{fig:pie-charts}
 \begin{figure}[ht]
 \begin{center}
-\includegraphics[width=6cm]{pictexa}
-\caption{Diagram of a straight line}
-\label{fig:line}
+\includegraphics[width=15cm]{pie-charts}
+\caption{Pie charts with kibana}
+\label{fig:pie-charts}
 \end{center}
 \end{figure}
 
-Examples of references and a bibliography follow the acknowledgements.
+\subsection{Historical data analysis}
 
-\section*{Acknowledgements}
+\begin{enumerate}
+\item Define search that filters records which have an origin of cronjob and node kind of disk
+\item Define search that filters records which have an origin of cronjob and node kind of mss
+\item For each search create bar charts:
+\begin{itemize}
+\item Define Y axis as sum of node bytes
+\item Define X axis as field now
+\item Split charts by top 3 storage consuming user groups
+\item Split bars by;
+\begin{itemize}
+\item Top 20 storage consuming acquisition eras
+\item Top 20 storage consuming data tiers
+\end{itemize}
+\end{itemize}
+\item Combine all 4 visualizations in one dashboard and save it with time "Last 7 days"
+\end{enumerate}
+Capture of the dashboard can be seen in \ref{fig:bar-charts}
+\begin{figure}[ht]
+\begin{center}
+\includegraphics[width=15cm]{bar-charts}
+\caption{Bar charts with kibana}
+\label{fig:bar-charts}
+\end{center}
+\end{figure}
 
-We wish to thank A.N. Colleague for enlightening comments on
-the present topic.
+\section{Deployment}
 
-\begin{thebibliography}{99}
-\bibitem{Raby1966}
-J.M. Raby, Biophysical aspects of radiation quality, International 
-Atomic EnergyAgency, Technical Reports Series No. 58 (1966).
-\bibitem{Dupont1961}
-J.-P. Dupont, Proc. Int. Conf. on Radiation Hazards, Columbia, 
-1960 (Academic Press Inc., New York, 1961), Vol. II, p. 396.
-\bibitem{Appleman1959}
-H. Appleman \emph{et al.}, J. \emph{Med. Biol.} \textbf{8} (1959) 911.
-\bibitem{vanBerg1965}
-E. van Berg, D. Johnson and J. Smith, \emph{Rad. Res.} \textbf{5} (1965) 
-215.
-\bibitem{Bryant1985}
-P. Bryant and S. Newman (Eds.), The generation of high fields, 
-CAS--ECFA--INFN Workshop, Frascati, 1984, ECFA 85/91, CERN 85/07 
-(1985).
-\bibitem{Allen1977}
-M.A. Allen \emph{et al.}, \emph{IEEE Trans. Nucl. Sci.} \textbf{NS--24} (1977) 
-1780.
-\bibitem{cernrep}
-DTP Section, Preparing contributions to CERN reports,
-\url{http://cern.ch/DTP/cernrep.pdf}.
-\end{thebibliography}
+Service was implemented in development environment which consisted of personl VM (where elasticsearch/kibana were installed) and analytix cluster (where spark jobs were 
+submitted). Later it was moved into more accesible environment - WMArchive node. Migration process included:
+\begin{itemize}
+\item Creating rpm packages for the service
+\item Writing deployment and management scripts\footnote{https://github.com/vkuznet/deployment/tree/master/phedexreplicamonitoring}
+\item Solving kerberos authentication issues while accesing hdfs
+\item Deploying elasticsearch and opening port 9200 iptables
+\item Deploying kibana and opening port 5601 iptables
+\item Making rpm packeges from third-party resources needed for service
+\end{itemize}
+Future perspecitive is to migrate service under DMWM umbrella nad use elasticsearch/kibana from central CERN IT service.
+In order to use service in personal environment user should specify some environment variables (in the common usage variables will be set in manage script by programmer)
+\begin{itemize}
+\item SPARK{\_}CSV{\_}ASSEMBLY{\_}JAR - spark-csv package path
+\item ES{\_}HADOOP{\_}JAR - elasticsearch-hadoop package path
+\item PYTHONPATH - path to projects python folder. Ex.: ~/src/python
+\item PBR{\_}DATA - path to external data (phedex{\_}groups.csv, phedex{\_}node{\_}kinds.csv files). Ex.: ~/data
+\item PBR{\_}CONFIG - path to elasticsearch configuration (pbr.cfg). Ex.: ~/etc
+\end{itemize}
 
-\section*{Bibliography}
+\section{Conclusion}
 
-
-I.C. Percival and D. Richards, \emph{Introduction to Dynamics}
-(Cambridge University Press, Cambridge, 1982).
-
-\appendix
-\section{Title of appendix}
-\label{sec:app}
-
-\subsection{Subsection title in appendix}
-
-Inside an appendix the same level of headings (section, subsection,
-etc.) as in the main text applies. Only the first number is replaced
-by an uppercase letter.
-
-\subsubsection{Subsubsection title in appendix}
-
-Inside a subsubsection inside an appendix.
-
-\subsubsubsection{Subsubsubsection title in appendix}
+Service really helps to analyze data by reducing its dimensions (aggregation) and visualizing it. Proposed approach has three main advantages. First of all, it is very 
+efficient as it is build on top of Spark which allows distributed computing using executors memory instead of disk. Moreover, it is fully-covered. By using this service 
+user can get everything from raw data in hadoop file system to visualizations and dashboards in kibana. Lastly, it is highly configurable. If a user wants to look at data 
+from different perspective all he need to do is to change service parameters. By doing that he gets different agregations, different results written in hdfs and elasticsearch, 
+different visualizations and dashborads in kibana. All of this without a need to change the service itself.
 
 \end{document}
