@@ -420,8 +420,8 @@ def main():
     data_tier_reg = r"^/[^/]*/[^/^-]*-[^/]*/([^/]*)$"
     node_tier_reg = r"^(.{2})"
     campaign_reg = r"^/[^/]*/([^/]*)-[^/]*/[^/]*$"
-    groupf = udf(lambda x: groupdic[x], StringType())
-    nodef = udf(lambda x: nodedic[x], StringType())
+    groupf = udf(lambda x: groupdic.get(x, ''), StringType())
+    nodef = udf(lambda x: nodedic.get(x, ''), StringType())
     regexudf = udf(lambda x, y: bool(regexp_extract(x, y, 1)), BooleanType())
 
     ndf = pdf.withColumn("br_user_group", groupf(pdf.br_user_group_id)) \
