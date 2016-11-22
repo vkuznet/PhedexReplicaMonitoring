@@ -442,10 +442,6 @@ def main():
         print("pdf data type", type(ndf))
         ndf.printSchema()
 
-    # clean-up unnecessary dataframe and columns
-    pdf.unpersist()
-    ndf = ndf.select([c for c in pdf.columns if c in keys])
-
     # process aggregation parameters
     keys = [key.lower().strip() for key in opts.keys.split(',')]
     results = [result.lower().strip() for result in opts.results.split(',')]
@@ -455,6 +451,10 @@ def main():
     filtc = [fil.split(':')[0] for fil in opts.filt.split(',')] if opts.filt else []
     filtv = [fil.split(':')[1] for fil in opts.filt.split(',')] if opts.filt else []
     isavgday = (AVERAGEDAY in aggregations)
+
+    # clean-up unnecessary dataframe and columns
+    pdf.unpersist()
+    ndf = ndf.select([c for c in pdf.columns if c in keys])
 
     validateAggregationParams(keys, results, aggregations, order, filtc)
 
