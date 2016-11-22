@@ -420,27 +420,31 @@ def main():
     data_tier_reg = r"^/[^/]*/[^/^-]*-[^/]*/([^/]*)$"
     node_tier_reg = r"^(.{2})"
     campaign_reg = r"^/[^/]*/([^/]*)-[^/]*/[^/]*$"
-    groupf = udf(lambda x: groupdic[x], StringType())
-    nodef = udf(lambda x: nodedic[x], StringType())
+    groupf = udf(lambda x: groupdic.get(x, ''), StringType())
+    nodef = udf(lambda x: nodedic.get(x, ''), StringType())
     regexudf = udf(lambda x, y: bool(regexp_extract(x, y, 1)), BooleanType())
 
     ndf = pdf.withColumn("br_user_group", groupf(pdf.br_user_group_id)) \
          .withColumn("node_kind", nodef(pdf.node_id)) \
          .withColumn("now", from_unixtime(pdf.now_sec, "YYYY-MM-dd")) \
          .withColumn("acquisition_era", when(regexp_extract(pdf.dataset_name, acquisition_era_reg, 1) == "",\
-                    lit("null")).otherwise(regexp_extract(pdf.dataset_name, acquisition_era_reg, 1))) \
-        .withColumn("data_tier", when(regexp_extract(pdf.dataset_name, data_tier_reg, 1) == "",\
-                    lit("null")).otherwise(regexp_extract(pdf.dataset_name, data_tier_reg, 1)))\
-        .withColumn("node_tier", when(regexp_extract(pdf.node_name, node_tier_reg, 1) == "",\
-                    lit("null")).otherwise(regexp_extract(pdf.node_name, node_tier_reg, 1)))\
-        .withColumn("campaign", when(regexp_extract(pdf.dataset_name, campaign_reg, 1) == "",\
-                    lit("null")).otherwise(regexp_extract(pdf.dataset_name, campaign_reg, 1)))
+                     lit("null")).otherwise(regexp_extract(pdf.dataset_name, acquisition_era_reg, 1))) \
+         .withColumn("data_tier", when(regexp_extract(pdf.dataset_name, data_tier_reg, 1) == "",\
+                     lit("null")).otherwise(regexp_extract(pdf.dataset_name, data_tier_reg, 1)))\
+         .withColumn("node_tier", when(regexp_extract(pdf.node_name, node_tier_reg, 1) == "",\
+                     lit("null")).otherwise(regexp_extract(pdf.node_name, node_tier_reg, 1)))\
+         .withColumn("campaign", when(regexp_extract(pdf.dataset_name, campaign_reg, 1) == "",\
+                     lit("null")).otherwise(regexp_extract(pdf.dataset_name, campaign_reg, 1)))
 
-	# print dataframe schema
+    # print dataframe schema
     if opts.verbose:
         ndf.show()
         print("pdf data type", type(ndf))
         ndf.printSchema()
+
+    # clean-up unnecessary dataframe and columns
+    pdf.unpersist()
+    ndf = ndf.select([c for c in df.columns if c in keys])
 
     # process aggregation parameters
     keys = [key.lower().strip() for key in opts.keys.split(',')]

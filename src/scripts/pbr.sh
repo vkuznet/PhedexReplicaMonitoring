@@ -35,7 +35,7 @@ elif [[  $1 =~ -?-yarn(-cluster)?$ ]]; then
     # Temp solution to have a wrapper for python27 on spark cluster
     # once CERN IT will resolve python version we can remove PYSPARK_PYTHON
 #    PYSPARK_PYTHON='/etc/spark/python' \
-    PYSPARK_PYTHON='/afs/cern.ch/user/v/valya/public/python27'
+    PYSPARK_PYTHON='/afs/cern.ch/user/v/valya/public/python27' \
     spark-submit \
         --master yarn-client \
         --driver-class-path '/usr/lib/hive/lib/*' \
@@ -43,10 +43,8 @@ elif [[  $1 =~ -?-yarn(-cluster)?$ ]]; then
         --executor-memory 5g \
         --jars $jars \
         $wroot/pbr.py ${1+"$@"}
-#        --packages com.databricks:spark-csv_2.10:1.4.0 \
-#        $wroot/pbr.py ${1+"$@"}
 else
-    PYSPARK_PYTHON='/afs/cern.ch/user/v/valya/public/python27'
+    PYSPARK_PYTHON='/afs/cern.ch/user/v/valya/public/python27' \
     spark-submit \
         --driver-class-path '/usr/lib/hive/lib/*' \
         --driver-java-options '-Dspark.executor.extraClassPath=/usr/lib/hive/lib/*' \
@@ -54,8 +52,6 @@ else
         --executor-memory $((`nproc`/4))G \
         --master local[$((`nproc`/4))] \
         $wroot/pbr.py ${1+"$@"}
-#        --packages com.databricks:spark-csv_2.10:1.4.0 \
-#        $wroot/pbr.py ${1+"$@"}
 fi
 
 
