@@ -444,7 +444,7 @@ def main():
 
     # clean-up unnecessary dataframe and columns
     pdf.unpersist()
-    ndf = ndf.select([c for c in df.columns if c in keys])
+    ndf = ndf.select([c for c in pdf.columns if c in keys])
 
     # process aggregation parameters
     keys = [key.lower().strip() for key in opts.keys.split(',')]
