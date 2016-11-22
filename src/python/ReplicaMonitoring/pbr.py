@@ -452,10 +452,6 @@ def main():
     filtv = [fil.split(':')[1] for fil in opts.filt.split(',')] if opts.filt else []
     isavgday = (AVERAGEDAY in aggregations)
 
-    # clean-up unnecessary dataframe and columns
-    pdf.unpersist()
-    ndf = ndf.select([c for c in pdf.columns if c in keys])
-
     validateAggregationParams(keys, results, aggregations, order, filtc)
 
     # filtering data by regex
@@ -511,6 +507,11 @@ def main():
         aggres = aggres.select(aggres.node_name, interval_end(aggres.interval_group).alias("date"), aggres.delta_plus, aggres.delta_minus)
     
     else:
+        # clean-up unnecessary dataframe and columns
+        pdf.unpersist()
+        keys += ['now']
+        ndf = ndf.select([c for c in pdf.columns if c in keys])
+
         if isavgday:
             ndf.cache()
             datescount = ndf.select(ndf.now).distinct().count()
