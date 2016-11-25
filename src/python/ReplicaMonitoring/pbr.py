@@ -378,9 +378,10 @@ def main():
 
     config = ConfigParser.ConfigParser()
     config.read(CONFIG_PATH)
-    esnode = config.get('ElasticSearch','node')
-    esport = config.get('ElasticSearch','port')
-    esresource = config.get('ElasticSearch','resource')
+    if  opts.es:
+        esnode = config.get('ElasticSearch','node')
+        esport = config.get('ElasticSearch','port')
+        esresource = config.get('ElasticSearch','resource')
 
     # setup spark/sql context to be used for communication with HDFS
     sc = SparkContext(appName="phedex_br")
