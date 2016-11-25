@@ -41,6 +41,7 @@ elif [[  $1 =~ -?-yarn(-cluster)?$ ]]; then
         --driver-class-path '/usr/lib/hive/lib/*' \
         --driver-java-options '-Dspark.executor.extraClassPath=/usr/lib/hive/lib/*' \
         --executor-memory 5g \
+        --executor-cores 2 \
         --jars $jars \
         $wroot/pbr.py ${1+"$@"}
 else
@@ -50,6 +51,7 @@ else
         --driver-java-options '-Dspark.executor.extraClassPath=/usr/lib/hive/lib/*' \
         --jars $jars \
         --executor-memory $((`nproc`/4))G \
+        --executor-cores 2 \
         --master local[$((`nproc`/4))] \
         $wroot/pbr.py ${1+"$@"}
 fi
