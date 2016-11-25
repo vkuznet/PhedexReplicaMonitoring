@@ -16,7 +16,7 @@ import sys
 import argparse
 import ConfigParser
 
-from pyspark import SparkContext
+from pyspark import SparkContext, StorageLevel
 from pyspark.sql import Row
 from pyspark.sql import SQLContext
 from pyspark.sql import HiveContext
@@ -480,7 +480,7 @@ def main():
         rdf = idf.where((idf.row_number == 1) & (idf.interval_group != 0))\
                  .withColumn(result, when(idf.now == interval_end(idf.interval_group), getattr(idf, result)).otherwise(lit(0)))
         rdf = rdf.select(rdf.block_name, rdf.node_name, rdf.interval_group, getattr(rdf, result))
-        rdf.cache()
+        rdf.persist(StorageLevel.MEMORY_AND_DISK)
 
         #3 create intervals that not exist but has minus delta
         win = Window.partitionBy(idf.block_name, idf.node_name).orderBy(idf.interval_group)
@@ -513,7 +513,7 @@ def main():
         ndf = ndf.select([c for c in pdf.columns if c in keys])
 
         if isavgday:
-            ndf.cache()
+            ndf.persist(StorageLevel.MEMORY_AND_DISK)
             datescount = ndf.select(ndf.now).distinct().count()
             aggregations = ["sum" if aggregation == "avg-day" else aggregation for aggregation in aggregations]
         
@@ -532,7 +532,7 @@ def main():
             for field in resfields:
                 aggres = aggres.withColumn(field, getattr(aggres, field)/datescount)
 
-    aggres.cache()
+    aggres.persist(StorageLevel.MEMORY_AND_DISK)
 
     # output results
     if opts.fout:
