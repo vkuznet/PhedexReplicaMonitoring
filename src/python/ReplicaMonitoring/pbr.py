@@ -510,8 +510,6 @@ def main():
     else:
         # clean-up unnecessary dataframe and columns
         pdf.unpersist()
-        keys += ['now']
-        ndf = ndf.select([c for c in pdf.columns if c in keys])
 
         if isavgday:
             ndf.persist(StorageLevel.MEMORY_AND_DISK)
