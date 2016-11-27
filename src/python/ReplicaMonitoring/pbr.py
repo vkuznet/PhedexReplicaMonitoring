@@ -481,7 +481,7 @@ def main():
         rdf = idf.where((idf.row_number == 1) & (idf.interval_group != 0))\
                  .withColumn(result, when(idf.now == interval_end(idf.interval_group), getattr(idf, result)).otherwise(lit(0)))
         rdf = rdf.select(rdf.block_name, rdf.node_name, rdf.interval_group, getattr(rdf, result))
-        rdf.persist(StorageLevel.MEMORY_AND_DISK)
+#         rdf.persist(StorageLevel.MEMORY_AND_DISK)
 
         #3 create intervals that not exist but has minus delta
         win = Window.partitionBy(idf.block_name, idf.node_name).orderBy(idf.interval_group)
@@ -510,11 +510,9 @@ def main():
     else:
         # clean-up unnecessary dataframe and columns
         pdf.unpersist()
-        keys += ['now']
-        ndf = ndf.select([c for c in pdf.columns if c in keys])
 
         if isavgday:
-            ndf.persist(StorageLevel.MEMORY_AND_DISK)
+#             ndf.persist(StorageLevel.MEMORY_AND_DISK)
             datescount = ndf.select(ndf.now).distinct().count()
             aggregations = ["sum" if aggregation == "avg-day" else aggregation for aggregation in aggregations]
         
@@ -526,6 +524,7 @@ def main():
             aggres = ndf.groupBy(keys).agg(resAgg_dic).orderBy(order, ascending=asc)
         else:
             aggres = ndf.groupBy(keys).agg(resAgg_dic)
+        ndf.unpersist()
 
         # if average day then divide by dates count
         if isavgday:
@@ -533,7 +532,7 @@ def main():
             for field in resfields:
                 aggres = aggres.withColumn(field, getattr(aggres, field)/datescount)
 
-    aggres.persist(StorageLevel.MEMORY_AND_DISK)
+#     aggres.persist(StorageLevel.MEMORY_AND_DISK)
 
     # output results
     if opts.fout:
@@ -548,7 +547,9 @@ def main():
                 f.write(",".join(aggres))
                 f.write(']')
         else:
-            aggres.write.format('com.databricks.spark.csv').options(header = is_header).save(fout_header)
+#             aggres.write.format('com.databricks.spark.csv').options(header = is_header).save(fout_header)
+            lines = aggres.map(to_csv)
+            lines.saveAsTextFile(opts.fout)
         
         if opts.es:
             validateEsParams(esnode, esport, esresource)
@@ -559,6 +560,9 @@ def main():
                                                                                  .save(mode="append")
     else:
         aggres.show(50)
+
+def to_csv(data):
+    return ','.join(str(d) for d in data)
 
 if __name__ == '__main__':
     main()
