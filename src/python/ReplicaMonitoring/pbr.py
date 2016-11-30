@@ -123,7 +123,7 @@ def ndays(val):
         out = val
     else:
         raise NotImplementedError("Invalid input: %s" % val)
-    return out
+    return int(out)
 
 def schema():
     """
