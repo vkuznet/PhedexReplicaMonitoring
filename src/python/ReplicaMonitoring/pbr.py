@@ -94,36 +94,8 @@ class OptionParser():
             dest="es", default=False, help="Writes result to elastic search")
         self.parser.add_argument("--esorigin", action="store",
             dest="esorigin", default="custom", help="Writes an data origin field to elastic search")
-
-def subtract_one_month(dt0):
-    "Helper function to correctly subtract one month from date object"
-    one_day = datetime.timedelta(days=1)
-    one_month_earlier = dt0 - one_day
-    while one_month_earlier.month == dt0.month or one_month_earlier.day > dt0.day:
-        one_month_earlier -= one_day
-    return one_month_earlier
-
-def ndays(val):
-    "Helper function to convert human based notations into #days"
-    out = 0
-    if  val.endswith('d') or val.endswith('days') or val.endswith('day'):
-        day = int(val.split('d')[0])
-	out = day
-    elif val.endswith('w') or val.endswith('weeks') or val.endswith('week'):
-        week = int(val.split('w')[0])
-        out = week*7
-    elif val.endswith('m') or val.endswith('months') or val.endswith('month'):
-        month = int(val.split('m')[0])
-        dtime = dt.date.today()
-        for _ in range(month):
-            dtime = subtract_one_month(dtime)
-        delta = dt.date.today()-dtime
-        out = delta.days
-    elif INT_NUMBER.match(val):
-        out = val
-    else:
-        raise NotImplementedError("Invalid input: %s" % val)
-    return int(out)
+        self.parser.add_argument("--no-log4j", action="store_true",
+            dest="no-log4j", default=False, help="Disable spark log4j messages")
 
 def schema():
     """
@@ -309,51 +281,6 @@ def defDates(fromdate, todate):
     return fromdate, todate
 
 
-def generateDateDict(fromdate_str, todate_str, interval):
-    """
-    Generates date dictionary with calculated interval group
-
-    :param fromdate_str: string representation of from date
-    :param todate_str: string representation of to date
-    :param interval_str: string represenation of interval
-    :returns: dictionary with key-value pairs - date:interval group
-    """
-    fromdate = dt.strptime(fromdate_str, "%Y-%m-%d")
-    todate = dt.strptime(todate_str, "%Y-%m-%d")
-
-    currentdate = fromdate
-    currentgroup = 1
-    elementcount = 0
-    dategroup_dic = {}
-
-    while currentdate <= todate:
-        dategroup_dic[dt.strftime(currentdate, "%Y-%m-%d")] = currentgroup
-        currentdate = currentdate + timedelta(days=1)
-        elementcount += 1
-        if elementcount >= interval:
-            elementcount = 0
-            currentgroup += 1 	
-
-    return dategroup_dic
-
-
-def generateBoundDict(datedic):
-    """
-    Generate dictionary with dates and its interval boundaries (start, end)
-
-    :param item: date dictionary with date and interval pairs
-    :returns: dictionary with dates and start and end of interval
-    """
-    boundic = {}
-    intervals = set(datedic.values())
-
-    for interval in intervals:
-        values = [k for k, v in datedic.items() if v == interval]
-        boundic[interval] = [min(values), max(values)]
-		
-    return boundic
-
-
 def zipResultAgg(res, agg):
     """
     Zips results fields and aggregation types into one dictionary
@@ -398,6 +325,101 @@ def formFileHeader(fout):
 
     return  fout + "/" + dt.strftime(dt.now(), "%Y-%m-%d_%Hh%Mm%Ss")
 
+def date_int(dateval, iformat='%Y-%m-%d'):
+    "Convert given date value into integer"
+    if  isinstance(dateval, str):
+        return int(dateval.replace('-', ''))
+    if  isinstance(dateval, dt):
+        return date_int(dt.strftime(dateval, iformat))
+    raise NotImplementedError("date value %s of type %s is not supported" \
+            % (dateval, type(dateval)))
+
+def generateDateDict(fromdate, todate, interval, iformat='%Y-%m-%d'):
+    dates = []
+    if  isinstance(interval, str):
+        if  interval.endswith('m') or interval.endswith('month') or interval.endswith('months'):
+            cdate = fromdate
+            while True:
+                edate = add_one_month(dt.strptime(cdate, iformat))
+                if  date_int(edate, iformat) > date_int(todate):
+                    break
+                dates.append([cdate, dt.strftime(edate-timedelta(days=1), iformat)])
+                cdate = dt.strftime(edate, iformat)
+        elif interval.endswith('w') or interval.endswith('week') or interval.endswith('weeks'):
+            interval = 7*int(interval.split('w')[0])
+        elif interval.endswith('d') or interval.endswith('day') or interval.endswith('days'):
+            interval = int(interval.split('d')[0])
+        else:
+            interval = int(interval)
+    if  isinstance(interval, int):
+        cdate = fromdate
+        while True:
+            edate = dt.strptime(cdate, iformat)+timedelta(days=interval)
+            if  date_int(edate, iformat) > date_int(todate):
+                break
+            dates.append([cdate, dt.strftime(edate-timedelta(days=1), iformat)])
+            cdate = dt.strftime(edate, iformat)
+    odict = {}
+    for idx, pair in enumerate(dates):
+        cdate = pair[0]
+        edate = pair[1]
+        while True:
+            if  date_int(cdate) > date_int(edate):
+                break
+            odict[cdate] = idx+1
+            mdate = dt.strptime(cdate, iformat) + timedelta(days=1)
+            cdate = dt.strftime(mdate, iformat)
+    return odict
+
+def generateBoundDict(datedic):
+    """
+    Generate dictionary with dates and its interval boundaries (start, end)
+
+    :param item: date dictionary with date and interval pairs
+    :returns: dictionary with dates and start and end of interval
+    """
+    boundic = {}
+    intervals = set(datedic.values())
+
+    for interval in intervals:
+        values = [k for k, v in datedic.items() if v == interval]
+        boundic[interval] = [min(values), max(values)]
+		
+    return boundic
+
+def add_one_month(dt0):
+    """Return a `datetime.date` or `datetime.datetime` (as given) that is
+    one month earlier.
+    
+    Note that the resultant day of the month might change if the following
+    month has fewer days:
+    
+        >>> add_one_month(datetime.date(2010, 1, 31))
+        datetime.date(2010, 2, 28)
+
+    Reference: http://bit.ly/2gCGAyX
+    """
+    dt1 = dt0.replace(day=1)
+    dt2 = dt1 + timedelta(days=32)
+    dt3 = dt2.replace(day=1)
+    return dt3
+
+def subtract_one_month(dt0):
+    """Return a `datetime.date` or `datetime.datetime` (as given) that is
+    one month later.
+    
+    Note that the resultant day of the month might change if the following
+    month has fewer days:
+    
+        >>> subtract_one_month(datetime.date(2010, 3, 31))
+        datetime.date(2010, 2, 28)
+
+    Reference: http://bit.ly/2gCGAyX
+    """
+    dt1 = dt0.replace(day=1)
+    dt2 = dt1 - timedelta(days=1)
+    dt3 = dt2.replace(day=1)
+    return dt3
 def to_csv(data):
     "Convert data rows into CSV format"
     return ','.join(str(d) for d in data)
@@ -433,8 +455,12 @@ def main():
                         .load(opts.fname, schema = schema_def)
     elif opts.basedir:
         fromdate, todate = defDates(opts.fromdate, opts.todate)
-        files = getFileList(opts.basedir, fromdate, todate)
-        msg = "Between dates %s and %s found %d directories" % (fromdate, todate, len(files))
+        datedic = generateDateDict(fromdate, todate, opts.interval)
+        boundic = generateBoundDict(datedic)
+        max_interval = max(datedic.values())
+        lastdate = sorted(datedic.keys())[-1]
+        files = getFileList(opts.basedir, fromdate, lastdate)
+        msg = "Between dates %s and %s found %d directories" % (fromdate, lastdate, len(files))
         print msg
 
         if not files:
@@ -472,6 +498,7 @@ def main():
     if opts.verbose:
         print("pdf data type", type(ndf))
         ndf.printSchema()
+        print("ndf total:", ndf.count())
         for row in ndf.head(10):
             print(row)
 
@@ -498,10 +525,6 @@ def main():
         result = results[0]
 
         #1 for all dates generate interval group dictionary
-        datedic = generateDateDict(fromdate, todate, ndays(opts.interval))
-        boundic = generateBoundDict(datedic)
-        max_interval = max(datedic.values())
-
         interval_group = udf(lambda x: datedic[x], IntegerType())
         interval_start = udf(lambda x: boundic[x][0], StringType())		
         interval_end = udf(lambda x: boundic[x][1], StringType())
