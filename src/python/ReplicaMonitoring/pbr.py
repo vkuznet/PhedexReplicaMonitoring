@@ -335,6 +335,8 @@ def date_int(dateval, iformat='%Y-%m-%d'):
             % (dateval, type(dateval)))
 
 def generateDateDict(fromdate, todate, interval, iformat='%Y-%m-%d'):
+    if  fromdate == todate:
+        return {fromdate: 1}
     dates = []
     if  isinstance(interval, str):
         if  interval.endswith('m') or interval.endswith('month') or interval.endswith('months'):
