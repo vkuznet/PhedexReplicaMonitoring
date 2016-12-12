@@ -11,11 +11,11 @@ if [ "$#" -eq 0 ]; then
 fi
 
 # get required jars
-if [ ! -f $SPARK_CSV_ASSEMBLY_JAR ]; then
+if [ ! -f "$SPARK_CSV_ASSEMBLY_JAR" ]; then
    echo "Unable to find spark-csv-assembly jar in SPARK_CSV_ASSEMBLY_JAR environment"
    exit 1
 fi
-if [ ! -f $ES_HADOOP_JAR ]; then
+if [ ! -f "$ES_HADOOP_JAR" ]; then
    echo "Unable to find elasticsearch-hadoop jar in ES_HADOOP_JAR environment"
    exit 1
 fi
@@ -26,6 +26,8 @@ wroot=`python -c "import ReplicaMonitoring; print '/'.join(ReplicaMonitoring.__f
 
 if [ "$1" == "-h" ] || [ "$1" == "--help" ] || [ "$1" == "-help" ]; then
     # run help
+    echo "Loading LCG environment from cvmfs, please wait ..."
+    source /cvmfs/sft.cern.ch/lcg/views/LCG_86/x86_64-slc6-gcc49-opt/setup.sh
     python $wroot/pbr.py --help
 elif [[  $1 =~ -?-yarn(-cluster)?$ ]]; then
     # to tune up these numbers:
