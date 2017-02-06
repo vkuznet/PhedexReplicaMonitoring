@@ -12,11 +12,16 @@ Description:
 
 # system modules
 import os
+import re
 import sys
+import time
 import argparse
 import ConfigParser
 
-from pyspark import SparkContext
+from datetime import datetime as dt
+from datetime import timedelta
+
+from pyspark import SparkContext, StorageLevel
 from pyspark.sql import Row
 from pyspark.sql import SQLContext
 from pyspark.sql import HiveContext
@@ -25,9 +30,8 @@ from pyspark.sql.window import Window
 from pyspark.sql.types import DoubleType, IntegerType, StructType, StructField, StringType, BooleanType, LongType
 from pyspark.sql.functions import udf, from_unixtime, date_format, regexp_extract, when, lit, lag, lead, coalesce, sum, rowNumber
 
-import re
-from datetime import datetime as dt
-from datetime import timedelta
+# int number
+INT_NUMBER = re.compile(r'(^[0-9-]$|^[0-9-][0-9]*$)')
 
 # additional data needed for joins
 # user group names
@@ -90,7 +94,8 @@ class OptionParser():
             dest="es", default=False, help="Writes result to elastic search")
         self.parser.add_argument("--esorigin", action="store",
             dest="esorigin", default="custom", help="Writes an data origin field to elastic search")
-
+        self.parser.add_argument("--no-log4j", action="store_true",
+            dest="no-log4j", default=False, help="Disable spark log4j messages")
 
 def schema():
     """
@@ -172,6 +177,8 @@ def getFileList(basedir, fromdate, todate):
     dirs = os.popen("hadoop fs -ls %s | sed '1d;s/  */ /g' | cut -d\  -f8" % basedir).read().splitlines()
     # if files are not in hdfs --> dirs = os.listdir(basedir)
 
+    o_fromdate = fromdate
+    o_todate = todate
     try:
         fromdate = dt.strptime(fromdate, "%Y-%m-%d")
         todate = dt.strptime(todate, "%Y-%m-%d")
@@ -181,10 +188,21 @@ def getFileList(basedir, fromdate, todate):
     pattern = re.compile(r"(\d{4}-\d{2}-\d{2})")
 
     dirdate_dic = {}
-    for di in dirs:
-        matching = pattern.search(di)
+    from_match = 0
+    to_match = 0
+    for idir in dirs:
+        if  idir.find(o_fromdate) != -1:
+            from_match = 1
+        if  idir.find(o_todate) != -1:
+            to_match = 1
+        matching = pattern.search(idir)
         if matching:
-            dirdate_dic[di] = dt.strptime(matching.group(1), "%Y-%m-%d")
+            dirdate_dic[idir] = dt.strptime(matching.group(1), "%Y-%m-%d")
+
+    if  not from_match:
+        raise Exception("Unable to find fromdate=%s are on HDFS %s" % (o_fromdate, basedir))
+    if  not to_match:
+        raise Exception("Unable to find todate=%s are on HDFS %s" % (o_todate, basedir))
 
     # if files are not in hdfs --> return [ basedir + k for k, v in dirdate_dic.items() if v >= fromdate and v <= todate]
     return [k for k, v in dirdate_dic.items() if v >= fromdate and v <= todate]		
@@ -221,22 +239,6 @@ def validateAggregationParams(keys, res, agg, order, filt):
     if msg:
         raise NotImplementedError(msg)
 
-
-def validateDeltaParam(interval_str, results):
-    """
-    Validates parameters for delta operation
-
-    :param interval_str: interval string representation
-    :param results: result field for delta operation
-    :raises ValueError: if interval is not integer or result contains more than one field
-    """
-    try:
-        interval = int(interval_str)
-    except ValueError:
-        raise ValueError("Interval must be an integer value")
-
-    if len(results) != 1:
-        raise ValueError("Delta aggregation can have only 1 result field")
 
 def validateLogLevel(log_level):
     """
@@ -277,52 +279,6 @@ def defDates(fromdate, todate):
         fromdate = dt.strftime(dt.now(), "%Y-%m-%d")
         todate = dt.strftime(dt.now(), "%Y-%m-%d")
     return fromdate, todate
-
-
-def generateDateDict(fromdate_str, todate_str, interval_str):
-    """
-    Generates date dictionary with calculated interval group
-
-    :param fromdate_str: string representation of from date
-    :param todate_str: string representation of to date
-    :param interval_str: string represenation of interval
-    :returns: dictionary with key-value pairs - date:interval group
-    """
-    fromdate = dt.strptime(fromdate_str, "%Y-%m-%d")
-    todate = dt.strptime(todate_str, "%Y-%m-%d")
-    interval = int(interval_str)
-
-    currentdate = fromdate
-    currentgroup = 1
-    elementcount = 0
-    dategroup_dic = {}
-
-    while currentdate <= todate:
-        dategroup_dic[dt.strftime(currentdate, "%Y-%m-%d")] = currentgroup
-        currentdate = currentdate + timedelta(days=1)
-        elementcount += 1
-        if elementcount >= interval:
-            elementcount = 0
-            currentgroup += 1 	
-
-    return dategroup_dic
-
-
-def generateBoundDict(datedic):
-    """
-    Generate dictionary with dates and its interval boundaries (start, end)
-
-    :param item: date dictionary with date and interval pairs
-    :returns: dictionary with dates and start and end of interval
-    """
-    boundic = {}
-    intervals = set(datedic.values())
-
-    for interval in intervals:
-        values = [k for k, v in datedic.items() if v == interval]
-        boundic[interval] = [min(values), max(values)]
-		
-    return boundic
 
 
 def zipResultAgg(res, agg):
@@ -369,7 +325,106 @@ def formFileHeader(fout):
 
     return  fout + "/" + dt.strftime(dt.now(), "%Y-%m-%d_%Hh%Mm%Ss")
 
-#########################################################################################################################################
+def date_int(dateval, iformat='%Y-%m-%d'):
+    "Convert given date value into integer"
+    if  isinstance(dateval, str):
+        return int(dateval.replace('-', ''))
+    if  isinstance(dateval, dt):
+        return date_int(dt.strftime(dateval, iformat))
+    raise NotImplementedError("date value %s of type %s is not supported" \
+            % (dateval, type(dateval)))
+
+def generateDateDict(fromdate, todate, interval, iformat='%Y-%m-%d'):
+    if  fromdate == todate:
+        return {fromdate: 1}
+    dates = []
+    if  isinstance(interval, str):
+        if  interval.endswith('m') or interval.endswith('month') or interval.endswith('months'):
+            cdate = fromdate
+            while True:
+                edate = add_one_month(dt.strptime(cdate, iformat))
+                if  date_int(edate, iformat) > date_int(todate):
+                    break
+                dates.append([cdate, dt.strftime(edate-timedelta(days=1), iformat)])
+                cdate = dt.strftime(edate, iformat)
+        elif interval.endswith('w') or interval.endswith('week') or interval.endswith('weeks'):
+            interval = 7*int(interval.split('w')[0])
+        elif interval.endswith('d') or interval.endswith('day') or interval.endswith('days'):
+            interval = int(interval.split('d')[0])
+        else:
+            interval = int(interval)
+    if  isinstance(interval, int):
+        cdate = fromdate
+        while True:
+            edate = dt.strptime(cdate, iformat)+timedelta(days=interval)
+            if  date_int(edate, iformat) > date_int(todate):
+                break
+            dates.append([cdate, dt.strftime(edate-timedelta(days=1), iformat)])
+            cdate = dt.strftime(edate, iformat)
+    odict = {}
+    for idx, pair in enumerate(dates):
+        cdate = pair[0]
+        edate = pair[1]
+        while True:
+            if  date_int(cdate) > date_int(edate):
+                break
+            odict[cdate] = idx+1
+            mdate = dt.strptime(cdate, iformat) + timedelta(days=1)
+            cdate = dt.strftime(mdate, iformat)
+    return odict
+
+def generateBoundDict(datedic):
+    """
+    Generate dictionary with dates and its interval boundaries (start, end)
+
+    :param item: date dictionary with date and interval pairs
+    :returns: dictionary with dates and start and end of interval
+    """
+    boundic = {}
+    intervals = set(datedic.values())
+
+    for interval in intervals:
+        values = [k for k, v in datedic.items() if v == interval]
+        boundic[interval] = [min(values), max(values)]
+		
+    return boundic
+
+def add_one_month(dt0):
+    """Return a `datetime.date` or `datetime.datetime` (as given) that is
+    one month earlier.
+    
+    Note that the resultant day of the month might change if the following
+    month has fewer days:
+    
+        >>> add_one_month(datetime.date(2010, 1, 31))
+        datetime.date(2010, 2, 28)
+
+    Reference: http://bit.ly/2gCGAyX
+    """
+    dt1 = dt0.replace(day=1)
+    dt2 = dt1 + timedelta(days=32)
+    dt3 = dt2.replace(day=1)
+    return dt3
+
+def subtract_one_month(dt0):
+    """Return a `datetime.date` or `datetime.datetime` (as given) that is
+    one month later.
+    
+    Note that the resultant day of the month might change if the following
+    month has fewer days:
+    
+        >>> subtract_one_month(datetime.date(2010, 3, 31))
+        datetime.date(2010, 2, 28)
+
+    Reference: http://bit.ly/2gCGAyX
+    """
+    dt1 = dt0.replace(day=1)
+    dt2 = dt1 - timedelta(days=1)
+    dt3 = dt2.replace(day=1)
+    return dt3
+def to_csv(data):
+    "Convert data rows into CSV format"
+    return ','.join(str(d) for d in data)
 
 def main():
     "Main function"
@@ -378,9 +433,10 @@ def main():
 
     config = ConfigParser.ConfigParser()
     config.read(CONFIG_PATH)
-    esnode = config.get('ElasticSearch','node')
-    esport = config.get('ElasticSearch','port')
-    esresource = config.get('ElasticSearch','resource')
+    if  opts.es:
+        esnode = config.get('ElasticSearch','node')
+        esport = config.get('ElasticSearch','port')
+        esresource = config.get('ElasticSearch','resource')
 
     # setup spark/sql context to be used for communication with HDFS
     sc = SparkContext(appName="phedex_br")
@@ -401,8 +457,12 @@ def main():
                         .load(opts.fname, schema = schema_def)
     elif opts.basedir:
         fromdate, todate = defDates(opts.fromdate, opts.todate)
-        files = getFileList(opts.basedir, fromdate, todate)
-        msg = "Between dates %s and %s found %d directories" % (fromdate, todate, len(files))
+        datedic = generateDateDict(fromdate, todate, opts.interval)
+        boundic = generateBoundDict(datedic)
+        max_interval = max(datedic.values())
+        lastdate = sorted(datedic.keys())[-1]
+        files = getFileList(opts.basedir, fromdate, lastdate)
+        msg = "Between dates %s and %s found %d directories" % (fromdate, lastdate, len(files))
         print msg
 
         if not files:
@@ -426,7 +486,7 @@ def main():
 
     ndf = pdf.withColumn("br_user_group", groupf(pdf.br_user_group_id)) \
          .withColumn("node_kind", nodef(pdf.node_id)) \
-         .withColumn("now", from_unixtime(pdf.now_sec, "YYYY-MM-dd")) \
+         .withColumn("now", from_unixtime(pdf.now_sec, "yyyy-MM-dd")) \
          .withColumn("acquisition_era", when(regexp_extract(pdf.dataset_name, acquisition_era_reg, 1) == "",\
                      lit("null")).otherwise(regexp_extract(pdf.dataset_name, acquisition_era_reg, 1))) \
          .withColumn("data_tier", when(regexp_extract(pdf.dataset_name, data_tier_reg, 1) == "",\
@@ -438,9 +498,11 @@ def main():
 
     # print dataframe schema
     if opts.verbose:
-        ndf.show()
         print("pdf data type", type(ndf))
         ndf.printSchema()
+        print("ndf total:", ndf.count())
+        for row in ndf.head(10):
+            print(row)
 
     # process aggregation parameters
     keys = [key.lower().strip() for key in opts.keys.split(',')]
@@ -460,14 +522,11 @@ def main():
 
     # if delta aggregation is used
     if DELTA in aggregations:
-        validateDeltaParam(opts.interval, results)			
+        if len(results) != 1:
+            raise ValueError("Delta aggregation can have only 1 result field")
         result = results[0]
 
         #1 for all dates generate interval group dictionary
-        datedic = generateDateDict(fromdate, todate, opts.interval)
-        boundic = generateBoundDict(datedic)
-        max_interval = max(datedic.values())
-
         interval_group = udf(lambda x: datedic[x], IntegerType())
         interval_start = udf(lambda x: boundic[x][0], StringType())		
         interval_end = udf(lambda x: boundic[x][1], StringType())
@@ -480,7 +539,6 @@ def main():
         rdf = idf.where((idf.row_number == 1) & (idf.interval_group != 0))\
                  .withColumn(result, when(idf.now == interval_end(idf.interval_group), getattr(idf, result)).otherwise(lit(0)))
         rdf = rdf.select(rdf.block_name, rdf.node_name, rdf.interval_group, getattr(rdf, result))
-        rdf.cache()
 
         #3 create intervals that not exist but has minus delta
         win = Window.partitionBy(idf.block_name, idf.node_name).orderBy(idf.interval_group)
@@ -509,11 +567,8 @@ def main():
     else:
         # clean-up unnecessary dataframe and columns
         pdf.unpersist()
-        keys += ['now']
-        ndf = ndf.select([c for c in pdf.columns if c in keys])
 
         if isavgday:
-            ndf.cache()
             datescount = ndf.select(ndf.now).distinct().count()
             aggregations = ["sum" if aggregation == "avg-day" else aggregation for aggregation in aggregations]
         
@@ -525,14 +580,13 @@ def main():
             aggres = ndf.groupBy(keys).agg(resAgg_dic).orderBy(order, ascending=asc)
         else:
             aggres = ndf.groupBy(keys).agg(resAgg_dic)
+        ndf.unpersist()
 
         # if average day then divide by dates count
         if isavgday:
             resfields = [resAgg_dic[result] + "(" + result + ")" for result in results]
             for field in resfields:
                 aggres = aggres.withColumn(field, getattr(aggres, field)/datescount)
-
-    aggres.cache()
 
     # output results
     if opts.fout:
@@ -547,7 +601,8 @@ def main():
                 f.write(",".join(aggres))
                 f.write(']')
         else:
-            aggres.write.format('com.databricks.spark.csv').options(header = is_header).save(fout_header)
+            lines = aggres.map(to_csv)
+            lines.saveAsTextFile(opts.fout)
         
         if opts.es:
             validateEsParams(esnode, esport, esresource)
@@ -557,7 +612,8 @@ def main():
                                                                                  .option("es.resource", esresource)\
                                                                                  .save(mode="append")
     else:
-        aggres.show(50)
+        for row in aggres.head(10):
+            print(row)
 
 if __name__ == '__main__':
     main()
