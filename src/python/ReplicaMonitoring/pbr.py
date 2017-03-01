@@ -14,6 +14,7 @@ Description:
 import os
 import re
 import sys
+import json
 import time
 import argparse
 import ConfigParser
@@ -21,6 +22,14 @@ import ConfigParser
 from datetime import datetime as dt
 from datetime import timedelta
 
+# WMCore modules
+try:
+    # stopmAMQ API
+    from WMCore.Services.StompAMQ.StompAMQ import StompAMQ
+except ImportError:
+    StompAMQ = None
+
+# pyspark modules
 from pyspark import SparkContext, StorageLevel
 from pyspark.sql import Row
 from pyspark.sql import SQLContext
@@ -96,6 +105,9 @@ class OptionParser():
             dest="esorigin", default="custom", help="Writes an data origin field to elastic search")
         self.parser.add_argument("--no-log4j", action="store_true",
             dest="no-log4j", default=False, help="Disable spark log4j messages")
+        msg = "Send results via StompAMQ to a broker, provide broker credentials in JSON file"
+        self.parser.add_argument("--amq", action="store",
+            dest="amq", default="", help=msg)
 
 def schema():
     """
@@ -422,9 +434,20 @@ def subtract_one_month(dt0):
     dt2 = dt1 - timedelta(days=1)
     dt3 = dt2.replace(day=1)
     return dt3
+
 def to_csv(data):
     "Convert data rows into CSV format"
     return ','.join(str(d) for d in data)
+
+def credentials(fname=None):
+    "Read credentials from PBR_BROKER environment"
+    if  not fname:
+        fname = os.environ.get('PBR_BROKER', '')
+    if  not os.path.isfile(fname):
+        return {}
+    with open(fname, 'r') as istream:
+        data = json.load(istream)
+    return data
 
 def main():
     "Main function"
@@ -611,9 +634,29 @@ def main():
                                                                                  .option("es.port", esport)\
                                                                                  .option("es.resource", esresource)\
                                                                                  .save(mode="append")
+
+
     else:
         for row in aggres.head(10):
             print(row)
+
+    if opts.amq:
+        creds = credentials(opts.amq)
+        host, port = creds['host_and_ports'].split(':')
+        port = int(port)
+        aggres = aggres.toJSON().collect()
+        if  creds and StompAMQ:
+            print("### Send %s docs via StompAMQ" % len(results))
+            amq = StompAMQ(creds['username'], creds['password'], \
+                    creds['producer'], creds['topic'], [(host, port)])
+            data = []
+            for doc in aggres:
+                hid = doc.get("hash", 1)
+                data.append(amq.make_notification(doc, hid))
+                results = amq.send(data)
+                print("### results from AMQ", len(results))
+            results = amq.send(data)
+            print("### results from AMQ", len(results))
 
 if __name__ == '__main__':
     main()
