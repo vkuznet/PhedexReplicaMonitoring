@@ -635,7 +635,6 @@ def main():
                                                                                  .option("es.resource", esresource)\
                                                                                  .save(mode="append")
 
-
     else:
         for row in aggres.head(10):
             print(row)
@@ -646,17 +645,16 @@ def main():
         port = int(port)
         aggres = aggres.toJSON().collect()
         if  creds and StompAMQ:
-            print("### Send %s docs via StompAMQ" % len(results))
+            print("### Send %s docs via StompAMQ" % len(aggres))
             amq = StompAMQ(creds['username'], creds['password'], \
-                    creds['producer'], creds['topic'], [(host, port)])
+                creds['producer'], creds['topic'], [(host, port)])
             data = []
             for doc in aggres:
+                doc = json.loads(doc)
                 hid = doc.get("hash", 1)
                 data.append(amq.make_notification(doc, hid))
-                results = amq.send(data)
-                print("### results from AMQ", len(results))
             results = amq.send(data)
-            print("### results from AMQ", len(results))
+            print("### results sent by AMQ", len(results))
 
 if __name__ == '__main__':
     main()
