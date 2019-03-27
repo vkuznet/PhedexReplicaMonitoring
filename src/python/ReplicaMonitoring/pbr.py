@@ -37,7 +37,8 @@ from pyspark.sql import HiveContext
 from pyspark.sql import DataFrame
 from pyspark.sql.window import Window
 from pyspark.sql.types import DoubleType, IntegerType, StructType, StructField, StringType, BooleanType, LongType
-from pyspark.sql.functions import udf, from_unixtime, date_format, regexp_extract, when, lit, lag, lead, coalesce, sum, rowNumber
+from pyspark.sql.functions import udf, from_unixtime, date_format, regexp_extract, when, lit, lag, lead, coalesce, sum
+from pyspark.sql import functions as F
 
 # int number
 INT_NUMBER = re.compile(r'(^[0-9-]$|^[0-9-][0-9]*$)')
@@ -523,9 +524,9 @@ def main():
     if opts.verbose:
         print("pdf data type", type(ndf))
         ndf.printSchema()
-        print("ndf total:", ndf.count())
-        for row in ndf.head(10):
-            print(row)
+#         print("ndf total:", ndf.count())
+#         for row in ndf.head(10):
+#             print(row)
 
     # process aggregation parameters
     keys = [key.lower().strip() for key in opts.keys.split(',')]
@@ -558,7 +559,7 @@ def main():
         ndf = ndf.select(ndf.block_name, ndf.node_name, ndf.now, getattr(ndf, result))
         idf = ndf.withColumn("interval_group", interval_group(ndf.now))
         win = Window.partitionBy(idf.block_name, idf.node_name, idf.interval_group).orderBy(idf.now.desc())	
-        idf = idf.withColumn("row_number", rowNumber().over(win))
+        idf = idf.withColumn("row_number", F.rowNumber().over(win))
         rdf = idf.where((idf.row_number == 1) & (idf.interval_group != 0))\
                  .withColumn(result, when(idf.now == interval_end(idf.interval_group), getattr(idf, result)).otherwise(lit(0)))
         rdf = rdf.select(rdf.block_name, rdf.node_name, rdf.interval_group, getattr(rdf, result))
@@ -624,8 +625,9 @@ def main():
                 f.write(",".join(aggres))
                 f.write(']')
         else:
-            lines = aggres.map(to_csv)
-            lines.saveAsTextFile(opts.fout)
+#             lines = aggres.map(to_csv)
+#             lines.saveAsTextFile(opts.fout)
+            aggres.write.csv(opts.fout)
         
         if opts.es:
             validateEsParams(esnode, esport, esresource)
